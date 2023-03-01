@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import net.starlark.java.eval.Dict;
 
 /**
  * Fake implementation of {@link Registry}, where modules can be freely added and stored in memory.
@@ -73,8 +74,9 @@ public class FakeRegistry implements Registry {
     return RepoSpec.builder()
         .setRuleClassName("local_repository")
         .setAttributes(
-            ImmutableMap.of(
-                "name", repoName.getName(), "path", rootPath + "/" + repoName.getName()))
+            Dict.immutableCopyOf(
+                ImmutableMap.of(
+                    "name", repoName.getName(), "path", rootPath + "/" + repoName.getName())))
         .build();
   }
 

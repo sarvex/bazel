@@ -107,6 +107,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import net.starlark.java.eval.Dict;
 
 /** Adds support for fetching external code. */
 public class BazelRepositoryModule extends BlazeModule {
@@ -232,7 +233,8 @@ public class BazelRepositoryModule extends BlazeModule {
               public RepoSpec getRepoSpec(RepositoryName repoName) {
                 return RepoSpec.builder()
                     .setRuleClassName("local_config_platform")
-                    .setAttributes(ImmutableMap.of("name", repoName.getName()))
+                    .setAttributes(
+                        Dict.immutableCopyOf(ImmutableMap.of("name", repoName.getName())))
                     .build();
               }
 

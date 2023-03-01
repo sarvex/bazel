@@ -18,6 +18,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import net.starlark.java.eval.Dict;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -31,12 +33,12 @@ public class RepoSpecTest {
     RepoSpec repoSpec =
         RepoSpec.builder()
             .setRuleClassName("local_repository")
-            .setAttributes(ImmutableMap.of("path", "/foo/bar"))
+            .setAttributes(Dict.immutableCopyOf(ImmutableMap.of("path", "/foo/bar")))
             .build();
     assertThat(repoSpec.isNativeRepoRule()).isTrue();
     assertThat(repoSpec.ruleClassName()).isEqualTo("local_repository");
     assertThat(repoSpec.getRuleClass()).isEqualTo("local_repository");
-    assertThat(repoSpec.attributes()).containsExactly("path", "/foo/bar");
+    assertThat((Map<?, ?>) repoSpec.attributes()).containsExactly("path", "/foo/bar");
   }
 
   @Test
@@ -45,12 +47,12 @@ public class RepoSpecTest {
         RepoSpec.builder()
             .setBzlFile("//pkg:repo.bzl")
             .setRuleClassName("my_repo")
-            .setAttributes(ImmutableMap.of("attr1", "foo", "attr2", "bar"))
+            .setAttributes(Dict.immutableCopyOf(ImmutableMap.of("attr1", "foo", "attr2", "bar")))
             .build();
     assertThat(repoSpec.isNativeRepoRule()).isFalse();
     assertThat(repoSpec.bzlFile()).hasValue("//pkg:repo.bzl");
     assertThat(repoSpec.ruleClassName()).isEqualTo("my_repo");
     assertThat(repoSpec.getRuleClass()).isEqualTo("//pkg:repo.bzl%my_repo");
-    assertThat(repoSpec.attributes()).containsExactly("attr1", "foo", "attr2", "bar");
+    assertThat((Map<?, ?>) repoSpec.attributes()).containsExactly("attr1", "foo", "attr2", "bar");
   }
 }

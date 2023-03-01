@@ -15,8 +15,8 @@
 package com.google.devtools.build.lib.bazel.bzlmod;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
+import net.starlark.java.eval.Dict;
 
 /**
  * A class holding information about the attributes of a repository rule and where the rule class is
@@ -32,7 +32,7 @@ public abstract class RepoSpec {
 
   public abstract String ruleClassName();
 
-  public abstract ImmutableMap<String, Object> attributes();
+  public abstract Dict<String, Object> attributes();
 
   public static Builder builder() {
     return new AutoValue_RepoSpec.Builder();
@@ -47,7 +47,7 @@ public abstract class RepoSpec {
 
     public abstract Builder setRuleClassName(String name);
 
-    public abstract Builder setAttributes(ImmutableMap<String, Object> attributes);
+    public abstract Builder setAttributes(Dict<String, Object> attributes);
 
     public abstract RepoSpec build();
   }

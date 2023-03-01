@@ -56,6 +56,7 @@ import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import net.starlark.java.eval.Dict;
 import net.starlark.java.eval.EvalException;
 import net.starlark.java.eval.Module;
 import net.starlark.java.eval.StarlarkSemantics;
@@ -198,7 +199,7 @@ public final class BzlmodRepoRuleFunction implements SkyFunction {
     if (singleVersion.getPatches().isEmpty()) {
       return repoSpec;
     }
-    ImmutableMap.Builder<String, Object> attrBuilder = ImmutableMap.builder();
+    Dict.Builder<String, Object> attrBuilder = Dict.builder();
     attrBuilder.putAll(repoSpec.attributes());
     attrBuilder.put("patches", singleVersion.getPatches());
     attrBuilder.put("patch_cmds", singleVersion.getPatchCmds());
@@ -206,7 +207,7 @@ public final class BzlmodRepoRuleFunction implements SkyFunction {
     return RepoSpec.builder()
         .setBzlFile(repoSpec.bzlFile())
         .setRuleClassName(repoSpec.ruleClassName())
-        .setAttributes(attrBuilder.buildOrThrow())
+        .setAttributes(attrBuilder.buildImmutable())
         .build();
   }
 

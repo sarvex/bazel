@@ -73,6 +73,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import net.starlark.java.eval.Dict;
 import net.starlark.java.eval.EvalException;
+import net.starlark.java.eval.Mutability;
+import net.starlark.java.eval.StarlarkInt;
+import net.starlark.java.eval.StarlarkList;
 import net.starlark.java.eval.StarlarkSemantics;
 import net.starlark.java.syntax.Location;
 import org.junit.Before;
@@ -221,12 +224,12 @@ public class ModuleFileFunctionTest extends FoundationTestCase {
                     ImmutableList.of(Version.parse("1.0"), Version.parse("2.0")), ""),
             "ggg",
                 ArchiveOverride.create(
-                    ImmutableList.of("https://hello.com/world.zip"),
-                    ImmutableList.of(),
-                    ImmutableList.of(),
+                    StarlarkList.of(Mutability.IMMUTABLE, "https://hello.com/world.zip"),
+                    StarlarkList.empty(),
+                    StarlarkList.empty(),
                     "",
                     "",
-                    0));
+                    StarlarkInt.of(0)));
     assertThat(rootModuleFileValue.getNonRegistryOverrideCanonicalRepoNameLookup())
         .containsExactly(
             RepositoryName.create("eee~override"), "eee",

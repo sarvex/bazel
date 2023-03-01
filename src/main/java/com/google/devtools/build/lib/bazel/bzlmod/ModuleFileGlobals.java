@@ -40,9 +40,11 @@ import net.starlark.java.annot.StarlarkBuiltin;
 import net.starlark.java.annot.StarlarkMethod;
 import net.starlark.java.eval.Dict;
 import net.starlark.java.eval.EvalException;
+import net.starlark.java.eval.Mutability;
 import net.starlark.java.eval.Sequence;
 import net.starlark.java.eval.Starlark;
 import net.starlark.java.eval.StarlarkInt;
+import net.starlark.java.eval.StarlarkList;
 import net.starlark.java.eval.StarlarkThread;
 import net.starlark.java.eval.StarlarkValue;
 import net.starlark.java.eval.Structure;
@@ -716,19 +718,19 @@ public class ModuleFileGlobals {
       Iterable<?> patchCmds,
       StarlarkInt patchStrip)
       throws EvalException {
-    ImmutableList<String> urlList =
+    StarlarkList<String> urlList =
         urls instanceof String
-            ? ImmutableList.of((String) urls)
-            : Sequence.cast(urls, String.class, "urls").getImmutableList();
+            ? StarlarkList.of(Mutability.IMMUTABLE, (String) urls)
+            : (StarlarkList<String>) Sequence.cast(urls, String.class, "urls");
     addOverride(
         moduleName,
         ArchiveOverride.create(
             urlList,
-            Sequence.cast(patches, String.class, "patches").getImmutableList(),
-            Sequence.cast(patchCmds, String.class, "patchCmds").getImmutableList(),
+            (StarlarkList<String>) Sequence.cast(patches, String.class, "patches"),
+            (StarlarkList<String>) Sequence.cast(patchCmds, String.class, "patchCmds"),
             integrity,
             stripPrefix,
-            patchStrip.toInt("archive_override.patch_strip")));
+            patchStrip));
   }
 
   @StarlarkMethod(

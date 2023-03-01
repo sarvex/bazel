@@ -16,33 +16,34 @@
 package com.google.devtools.build.lib.bazel.bzlmod;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.devtools.build.lib.bazel.bzlmod.BazelModuleInspectorValue.AugmentedModule.ResolutionReason;
 import com.google.devtools.build.lib.cmdline.RepositoryName;
+import net.starlark.java.eval.StarlarkInt;
+import net.starlark.java.eval.StarlarkList;
 
 /** Specifies that a module should be retrieved from an archive. */
 @AutoValue
 public abstract class ArchiveOverride implements NonRegistryOverride {
 
   public static ArchiveOverride create(
-      ImmutableList<String> urls,
-      ImmutableList<String> patches,
-      ImmutableList<String> patchCmds,
+      StarlarkList<String> urls,
+      StarlarkList<String> patches,
+      StarlarkList<String> patchCmds,
       String integrity,
       String stripPrefix,
-      int patchStrip) {
+      StarlarkInt patchStrip) {
     return new AutoValue_ArchiveOverride(
         urls, patches, patchCmds, integrity, stripPrefix, patchStrip);
   }
 
   /** The URLs pointing at the archives. Can be HTTP(S) or file URLs. */
-  public abstract ImmutableList<String> getUrls();
+  public abstract StarlarkList<String> getUrls();
 
   /** The patches to apply after extracting the archive. Should be a list of labels. */
-  public abstract ImmutableList<String> getPatches();
+  public abstract StarlarkList<String> getPatches();
 
   /** The patch commands to execute after extracting the archive. Should be a list of commands. */
-  public abstract ImmutableList<String> getPatchCmds();
+  public abstract StarlarkList<String> getPatchCmds();
 
   /** The subresource integirty metadata of the archive. */
   public abstract String getIntegrity();
@@ -51,7 +52,7 @@ public abstract class ArchiveOverride implements NonRegistryOverride {
   public abstract String getStripPrefix();
 
   /** The number of path segments to strip from the paths in the supplied patches. */
-  public abstract int getPatchStrip();
+  public abstract StarlarkInt getPatchStrip();
 
   /** Returns the {@link RepoSpec} that defines this repository. */
   @Override

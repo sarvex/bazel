@@ -22,7 +22,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.devtools.build.lib.authandtls.BasicHttpAuthenticationEncoder;
 import com.google.devtools.build.lib.authandtls.Netrc;
@@ -40,6 +39,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.util.Optional;
+import net.starlark.java.eval.Dict;
+import net.starlark.java.eval.Mutability;
+import net.starlark.java.eval.StarlarkList;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -152,13 +154,14 @@ public class IndexRegistryTest extends FoundationTestCase {
             new ArchiveRepoSpecBuilder()
                 .setRepoName("foorepo")
                 .setUrls(
-                    ImmutableList.of(
+                    StarlarkList.of(
+                        Mutability.IMMUTABLE,
                         "https://mirror.bazel.build/mysite.com/thing.zip",
                         "file:///home/bazel/mymirror/mysite.com/thing.zip",
                         "http://mysite.com/thing.zip"))
                 .setIntegrity("sha256-blah")
                 .setStripPrefix("pref")
-                .setRemotePatches(ImmutableMap.of())
+                .setRemotePatches(Dict.empty())
                 .setRemotePatchStrip(0)
                 .build());
     assertThat(
@@ -168,17 +171,21 @@ public class IndexRegistryTest extends FoundationTestCase {
             new ArchiveRepoSpecBuilder()
                 .setRepoName("barrepo")
                 .setUrls(
-                    ImmutableList.of(
+                    StarlarkList.of(
+                        Mutability.IMMUTABLE,
                         "https://mirror.bazel.build/example.com/archive.jar?with=query",
                         "file:///home/bazel/mymirror/example.com/archive.jar?with=query",
                         "https://example.com/archive.jar?with=query"))
                 .setIntegrity("sha256-bleh")
                 .setStripPrefix("")
                 .setRemotePatches(
-                    ImmutableMap.of(
-                        server.getUrl() + "/modules/bar/2.0/patches/1.fix-this.patch", "sha256-lol",
-                        server.getUrl() + "/modules/bar/2.0/patches/2.fix-that.patch",
-                            "sha256-kek"))
+                    Dict.copyOf(
+                        Mutability.IMMUTABLE,
+                        ImmutableMap.of(
+                            server.getUrl() + "/modules/bar/2.0/patches/1.fix-this.patch",
+                            "sha256-lol",
+                            server.getUrl() + "/modules/bar/2.0/patches/2.fix-that.patch",
+                            "sha256-kek")))
                 .setRemotePatchStrip(3)
                 .build());
   }
@@ -201,7 +208,9 @@ public class IndexRegistryTest extends FoundationTestCase {
         .isEqualTo(
             RepoSpec.builder()
                 .setRuleClassName("local_repository")
-                .setAttributes(ImmutableMap.of("name", "foorepo", "path", "/hello/bar/project_x"))
+                .setAttributes(
+                    Dict.immutableCopyOf(
+                        ImmutableMap.of("name", "foorepo", "path", "/hello/bar/project_x")))
                 .build());
   }
 
@@ -224,10 +233,10 @@ public class IndexRegistryTest extends FoundationTestCase {
         .isEqualTo(
             new ArchiveRepoSpecBuilder()
                 .setRepoName("foorepo")
-                .setUrls(ImmutableList.of("http://mysite.com/thing.zip"))
+                .setUrls(StarlarkList.of(Mutability.IMMUTABLE, "http://mysite.com/thing.zip"))
                 .setIntegrity("sha256-blah")
                 .setStripPrefix("pref")
-                .setRemotePatches(ImmutableMap.of())
+                .setRemotePatches(Dict.empty())
                 .setRemotePatchStrip(0)
                 .build());
   }

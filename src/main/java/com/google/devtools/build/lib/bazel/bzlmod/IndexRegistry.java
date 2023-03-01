@@ -18,7 +18,6 @@ package com.google.devtools.build.lib.bazel.bzlmod;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.devtools.build.lib.bazel.bzlmod.Version.ParseException;
 import com.google.devtools.build.lib.bazel.repository.downloader.DownloadManager;
@@ -34,9 +33,13 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import net.starlark.java.eval.Dict;
+import net.starlark.java.eval.StarlarkList;
 
 /**
  * Represents a Bazel module registry that serves a list of module metadata from a static HTTP
@@ -186,8 +189,9 @@ public class IndexRegistry implements Registry {
     return RepoSpec.builder()
         .setRuleClassName("local_repository")
         .setAttributes(
-            ImmutableMap.of(
-                "name", repoName.getName(), "path", PathFragment.create(path).toString()))
+            Dict.immutableCopyOf(
+                ImmutableMap.of(
+                    "name", repoName.getName(), "path", PathFragment.create(path).toString())))
         .build();
   }
 
@@ -205,7 +209,7 @@ public class IndexRegistry implements Registry {
       throw new IOException(String.format("Missing integrity for module %s", key));
     }
 
-    ImmutableList.Builder<String> urls = new ImmutableList.Builder<>();
+    List<String> urls = new ArrayList<>();
     // For each mirror specified in bazel_registry.json, add a URL that's essentially the mirror
     // URL concatenated with the source URL.
     if (bazelRegistryJson.isPresent() && bazelRegistryJson.get().mirrors != null) {
@@ -223,7 +227,7 @@ public class IndexRegistry implements Registry {
     urls.add(sourceUrl.toString());
 
     // Build remote patches as key-value pairs of "url" => "integrity".
-    ImmutableMap.Builder<String, String> remotePatches = new ImmutableMap.Builder<>();
+    Dict.Builder<String, String> remotePatches = new Dict.Builder<>();
     if (sourceJson.get().patches != null) {
       for (Map.Entry<String, String> entry : sourceJson.get().patches.entrySet()) {
         remotePatches.put(
@@ -240,10 +244,10 @@ public class IndexRegistry implements Registry {
 
     return new ArchiveRepoSpecBuilder()
         .setRepoName(repoName.getName())
-        .setUrls(urls.build())
+        .setUrls(StarlarkList.immutableCopyOf(urls))
         .setIntegrity(sourceJson.get().integrity)
         .setStripPrefix(Strings.nullToEmpty(sourceJson.get().stripPrefix))
-        .setRemotePatches(remotePatches.buildOrThrow())
+        .setRemotePatches(remotePatches.buildImmutable())
         .setRemotePatchStrip(sourceJson.get().patchStrip)
         .setArchiveType(sourceJson.get().archiveType)
         .build();
