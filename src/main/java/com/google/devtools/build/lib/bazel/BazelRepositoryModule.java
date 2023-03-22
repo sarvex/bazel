@@ -233,7 +233,8 @@ public class BazelRepositoryModule extends BlazeModule {
               public RepoSpec getRepoSpec(RepositoryName repoName) {
                 return RepoSpec.builder()
                     .setRuleClassName("local_config_platform")
-                    .setAttributes(Dict.immutableCopyOf(Map.of("name", repoName.getName())))
+                    .setAttributes(
+                        Dict.immutableCopyOf(ImmutableMap.of("name", repoName.getName())))
                     .build();
               }
 

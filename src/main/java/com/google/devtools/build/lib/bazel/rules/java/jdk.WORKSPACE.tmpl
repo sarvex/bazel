@@ -130,6 +130,17 @@ maybe(
 # This must be kept in sync with the top-level WORKSPACE file.
 maybe(
     remote_java_repository,
+    {remotejdk17_linux_s390x}
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:s390x",
+    ],
+    version = "17",
+)
+
+# This must be kept in sync with the top-level WORKSPACE file.
+maybe(
+    remote_java_repository,
     {remotejdk17_macos}
     target_compatible_with = [
         "@platforms//os:macos",
@@ -195,6 +206,17 @@ maybe(
 # This must be kept in sync with the top-level WORKSPACE file.
 maybe(
     remote_java_repository,
+    {remotejdk19_linux_s390x}
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:s390x",
+    ],
+    version = "19",
+)
+
+# This must be kept in sync with the top-level WORKSPACE file.
+maybe(
+    remote_java_repository,
     {remotejdk19_macos}
     target_compatible_with = [
         "@platforms//os:macos",
@@ -247,6 +269,16 @@ maybe(
 
 maybe(
     http_archive,
+{remote_java_tools_darwin_x86_64}
+)
+
+maybe(
+    http_archive,
+{remote_java_tools_darwin_arm64}
+)
+
+maybe(
+    http_archive,
 {rules_java}
 )
 
@@ -260,6 +292,12 @@ maybe(
 maybe(
     http_archive,
 {rules_proto}
+)
+
+# Needed only because of proguard_allowlister in java_tools.
+maybe(
+    http_archive,
+{rules_python}
 )
 
 register_toolchains("@bazel_tools//tools/jdk:all")

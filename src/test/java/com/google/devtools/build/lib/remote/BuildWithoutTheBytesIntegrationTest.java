@@ -101,6 +101,11 @@ public class BuildWithoutTheBytesIntegrationTest extends BuildWithoutTheBytesInt
     worker.restart();
   }
 
+  @Override
+  protected boolean hasAccessToRemoteOutputs() {
+    return true;
+  }
+
   @After
   public void tearDown() throws IOException {
     if (worker != null) {
@@ -321,6 +326,8 @@ public class BuildWithoutTheBytesIntegrationTest extends BuildWithoutTheBytesInt
 
   @Test
   public void symlinkToNestedFile() throws Exception {
+    addOptions("--noincompatible_strict_conflict_checks");
+
     write(
         "a/defs.bzl",
         "def _impl(ctx):",
@@ -373,6 +380,8 @@ public class BuildWithoutTheBytesIntegrationTest extends BuildWithoutTheBytesInt
 
   @Test
   public void symlinkToNestedDirectory() throws Exception {
+    addOptions("--noincompatible_strict_conflict_checks");
+
     write(
         "a/defs.bzl",
         "def _impl(ctx):",

@@ -730,7 +730,7 @@ public class ModuleFileGlobals {
             (StarlarkList<String>) Sequence.cast(patchCmds, String.class, "patchCmds"),
             integrity,
             stripPrefix,
-            patchStrip.toInt("archive_override.patch_strip")));
+            patchStrip));
   }
 
   @StarlarkMethod(

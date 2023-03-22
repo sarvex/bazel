@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import net.starlark.java.eval.Dict;
-import net.starlark.java.eval.Mutability;
 import net.starlark.java.eval.StarlarkList;
 
 /**
@@ -114,6 +113,7 @@ public class IndexRegistry implements Registry {
     Map<String, String> patches;
     int patchStrip;
     String path;
+    String archiveType;
   }
 
   /**
@@ -189,8 +189,9 @@ public class IndexRegistry implements Registry {
     return RepoSpec.builder()
         .setRuleClassName("local_repository")
         .setAttributes(
-            Dict.immutableCopyOf(Map.of(
-                "name", repoName.getName(), "path", PathFragment.create(path).toString())))
+            Dict.immutableCopyOf(
+                ImmutableMap.of(
+                    "name", repoName.getName(), "path", PathFragment.create(path).toString())))
         .build();
   }
 
@@ -248,6 +249,7 @@ public class IndexRegistry implements Registry {
         .setStripPrefix(Strings.nullToEmpty(sourceJson.get().stripPrefix))
         .setRemotePatches(remotePatches.buildImmutable())
         .setRemotePatchStrip(sourceJson.get().patchStrip)
+        .setArchiveType(sourceJson.get().archiveType)
         .build();
   }
 

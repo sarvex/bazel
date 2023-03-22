@@ -20,12 +20,16 @@ import static com.google.devtools.build.lib.vfs.FileSystemUtils.readContent;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertThrows;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.eventbus.Subscribe;
 import com.google.devtools.build.lib.actions.ActionExecutedEvent;
 import com.google.devtools.build.lib.actions.Artifact;
 import com.google.devtools.build.lib.actions.BuildFailedException;
 import com.google.devtools.build.lib.actions.CachedActionEvent;
+import com.google.devtools.build.lib.actions.FileArtifactValue;
 import com.google.devtools.build.lib.buildtool.util.BuildIntegrationTestCase;
+import com.google.devtools.build.lib.skyframe.ActionExecutionValue;
 import com.google.devtools.build.lib.util.OS;
 import com.google.devtools.build.lib.util.io.RecordingOutErr;
 import com.google.devtools.build.lib.vfs.Path;
@@ -48,6 +52,8 @@ public abstract class BuildWithoutTheBytesIntegrationTestBase extends BuildInteg
   protected abstract void assertOutputContains(String content, String contains) throws Exception;
 
   protected abstract void evictAllBlobs() throws Exception;
+
+  protected abstract boolean hasAccessToRemoteOutputs();
 
   protected void waitDownloads() throws Exception {
     // Trigger afterCommand of modules so that downloads are waited.
@@ -803,6 +809,62 @@ public abstract class BuildWithoutTheBytesIntegrationTestBase extends BuildInteg
   }
 
   @Test
+  public void incrementalBuild_remoteFileMetadataIsReplacedWithLocalFileMetadata()
+      throws Exception {
+    // We need to download the intermediate output
+    if (!hasAccessToRemoteOutputs()) {
+      return;
+    }
+
+    // Arrange: Prepare workspace and run a clean build
+    write(
+        "BUILD",
+        "genrule(",
+        "  name = 'foo',",
+        "  srcs = [],",
+        "  outs = ['out/foo.txt'],",
+        "  cmd = 'echo foo > $@',",
+        ")",
+        "genrule(",
+        "  name = 'foobar',",
+        "  srcs = [':foo'],",
+        "  outs = ['out/foobar.txt'],",
+        "  cmd = 'cat $(location :foo) > $@ && echo bar >> $@',",
+        "  tags = ['no-remote'],",
+        ")");
+
+    buildTarget("//:foobar");
+    assertValidOutputFile("out/foo.txt", "foo\n");
+    assertValidOutputFile("out/foobar.txt", "foo\nbar\n");
+    assertThat(getOnlyElement(getFileMetadata("//:foo").values()).isRemote()).isTrue();
+
+    // Act: Do an incremental build without any modifications
+    ActionEventCollector actionEventCollector = new ActionEventCollector();
+    getRuntimeWrapper().registerSubscriber(actionEventCollector);
+    buildTarget("//:foobar");
+
+    // Assert: remote file metadata is replaced with local file metadata
+    assertValidOutputFile("out/foo.txt", "foo\n");
+    assertValidOutputFile("out/foobar.txt", "foo\nbar\n");
+    assertThat(actionEventCollector.getActionExecutedEvents()).isEmpty();
+    // Two actions are invalidated but were able to hit the action cache
+    assertThat(actionEventCollector.getCachedActionEvents()).hasSize(2);
+    assertThat(getOnlyElement(getFileMetadata("//:foo").values()).isRemote()).isFalse();
+  }
+
+  private ImmutableMap<Artifact, FileArtifactValue> getFileMetadata(String target)
+      throws Exception {
+    var result = ImmutableMap.<Artifact, FileArtifactValue>builder();
+    var evaluator = getRuntimeWrapper().getSkyframeExecutor().getEvaluator();
+    for (var artifact : getArtifacts(target)) {
+      var value = evaluator.getExistingValue(Artifact.key(artifact));
+      Preconditions.checkState(value instanceof ActionExecutionValue);
+      result.putAll(((ActionExecutionValue) value).getAllFileValues());
+    }
+    return result.buildOrThrow();
+  }
+
+  @Test
   public void incrementalBuild_intermediateOutputModified_rerunGeneratingActions()
       throws Exception {
     // Arrange: Prepare workspace and run a clean build
@@ -938,6 +1000,99 @@ public abstract class BuildWithoutTheBytesIntegrationTestBase extends BuildInteg
 
     // Act: Do an incremental build without "clean" or "shutdown"
     buildTarget("//a:bar");
+
+    // Assert: target was successfully built
+    assertValidOutputFile(
+        "a/bar.out", "file-inside\nupdated bar" + lineSeparator(), /* isLocal= */ true);
+  }
+
+  @Test
+  public void remoteFilesExpiredBetweenBuilds_rerunGeneratingActions() throws Exception {
+    // Arrange: Prepare workspace and populate remote cache
+    write(
+        "a/BUILD",
+        "genrule(",
+        "  name = 'foo',",
+        "  srcs = ['foo.in'],",
+        "  outs = ['foo.out'],",
+        "  cmd = 'cat $(SRCS) > $@',",
+        ")",
+        "genrule(",
+        "  name = 'bar',",
+        "  srcs = ['foo.out', 'bar.in'],",
+        "  outs = ['bar.out'],",
+        "  cmd = 'cat $(SRCS) > $@',",
+        ")");
+    write("a/foo.in", "foo");
+    write("a/bar.in", "bar");
+
+    // Populate remote cache
+    buildTarget("//a:bar");
+    getOutputPath("a/foo.out").delete();
+    getOutputPath("a/bar.out").delete();
+    getOutputBase().getRelative("action_cache").deleteTreesBelow();
+    restartServer();
+
+    // Clean build, foo.out isn't downloaded
+    setDownloadToplevel();
+    addOptions("--experimental_remote_cache_ttl=0s");
+    buildTarget("//a:bar");
+    assertOutputDoesNotExist("a/foo.out");
+
+    // Evict blobs from remote cache
+    evictAllBlobs();
+
+    // Act: Do an incremental build
+    write("a/bar.in", "updated bar");
+    addOptions("--strategy_regexp=.*bar=local");
+    buildTarget("//a:bar");
+    waitDownloads();
+
+    // Assert: target was successfully built
+    assertValidOutputFile("a/bar.out", "foo" + lineSeparator() + "updated bar" + lineSeparator());
+  }
+
+  @Test
+  public void remoteTreeFilesExpiredBetweenBuilds_rerunGeneratingActions() throws Exception {
+    // Arrange: Prepare workspace and populate remote cache
+    write("BUILD");
+    writeOutputDirRule();
+    write(
+        "a/BUILD",
+        "load('//:output_dir.bzl', 'output_dir')",
+        "output_dir(",
+        "  name = 'foo.out',",
+        "  content_map = {'file-inside': 'hello world'},",
+        ")",
+        "genrule(",
+        "  name = 'bar',",
+        "  srcs = ['foo.out', 'bar.in'],",
+        "  outs = ['bar.out'],",
+        "  cmd = '( ls $(location :foo.out); cat $(location :bar.in) ) > $@',",
+        ")");
+    write("a/bar.in", "bar");
+
+    // Populate remote cache
+    buildTarget("//a:bar");
+    getOutputPath("a/foo.out").deleteTreesBelow();
+    getOutputPath("a/bar.out").delete();
+    getOutputBase().getRelative("action_cache").deleteTreesBelow();
+    restartServer();
+
+    // Clean build, foo.out isn't downloaded
+    setDownloadToplevel();
+    addOptions("--experimental_remote_cache_ttl=0s");
+    buildTarget("//a:bar");
+    assertOutputDoesNotExist("a/foo.out/file-inside");
+
+    // Evict blobs from remote cache
+    evictAllBlobs();
+
+    // Act: Do an incremental build
+    write("a/bar.in", "updated bar");
+    addOptions("--strategy_regexp=.*bar=local");
+    buildTarget("//a:bar");
+    waitDownloads();
 
     // Assert: target was successfully built
     assertValidOutputFile(

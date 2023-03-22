@@ -15,9 +15,9 @@
 
 package com.google.devtools.build.lib.bazel.bzlmod;
 
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import net.starlark.java.eval.Dict;
+import net.starlark.java.eval.Mutability;
 import net.starlark.java.eval.StarlarkInt;
 import net.starlark.java.eval.StarlarkList;
 
@@ -69,8 +69,8 @@ public class ArchiveRepoSpecBuilder {
   }
 
   @CanIgnoreReturnValue
-  public ArchiveRepoSpecBuilder setPatchStrip(int patchStrip) {
-    attrBuilder.put("patch_args", ImmutableList.of("-p" + patchStrip));
+  public ArchiveRepoSpecBuilder setPatchStrip(StarlarkInt patchStrip) {
+    attrBuilder.put("patch_args", StarlarkList.of(Mutability.IMMUTABLE, "-p" + patchStrip));
     return this;
   }
 
@@ -83,6 +83,14 @@ public class ArchiveRepoSpecBuilder {
   @CanIgnoreReturnValue
   public ArchiveRepoSpecBuilder setRemotePatchStrip(int remotePatchStrip) {
     attrBuilder.put("remote_patch_strip", StarlarkInt.of(remotePatchStrip));
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  public ArchiveRepoSpecBuilder setArchiveType(String archiveType) {
+    if (!Strings.isNullOrEmpty(archiveType)) {
+      attrBuilder.put("type", archiveType);
+    }
     return this;
   }
 

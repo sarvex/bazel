@@ -26,6 +26,7 @@ import com.google.devtools.build.lib.bazel.bzlmod.BazelModuleInspectorValue.Augm
 import com.google.devtools.build.lib.bazel.bzlmod.BazelModuleInspectorValue.AugmentedModule.ResolutionReason;
 import com.google.devtools.build.lib.bazel.bzlmod.BzlmodTestUtil.ModuleBuilder;
 import net.starlark.java.eval.Mutability;
+import net.starlark.java.eval.StarlarkInt;
 import net.starlark.java.eval.StarlarkList;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -293,12 +294,12 @@ public class BazelModuleInspectorFunctionTest {
         ImmutableMap.of(
             "bbb",
             ArchiveOverride.create(
-                StarlarkList.of(Mutability.IMMUTABLE,"file://users/user/bbb.zip"),
+                StarlarkList.of(Mutability.IMMUTABLE, "file://users/user/bbb.zip"),
                 StarlarkList.empty(),
                 StarlarkList.empty(),
                 "",
                 "",
-                0));
+                StarlarkInt.of(0)));
 
     ImmutableSet<ModuleKey> usedModules =
         ImmutableSet.of(ModuleKey.ROOT, createModuleKey("bbb", ""), createModuleKey("ccc", "1.1"));

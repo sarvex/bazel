@@ -68,6 +68,7 @@ import com.google.devtools.build.lib.rules.android.AndroidConfiguration;
 import com.google.devtools.build.lib.rules.android.AndroidDeviceBrokerInfo;
 import com.google.devtools.build.lib.rules.android.AndroidDeviceRule;
 import com.google.devtools.build.lib.rules.android.AndroidDeviceScriptFixtureRule;
+import com.google.devtools.build.lib.rules.android.AndroidDexInfo;
 import com.google.devtools.build.lib.rules.android.AndroidFeatureFlagSetProvider;
 import com.google.devtools.build.lib.rules.android.AndroidHostServiceFixtureRule;
 import com.google.devtools.build.lib.rules.android.AndroidIdeInfoProvider;
@@ -83,6 +84,7 @@ import com.google.devtools.build.lib.rules.android.AndroidManifestInfo;
 import com.google.devtools.build.lib.rules.android.AndroidNativeLibsInfo;
 import com.google.devtools.build.lib.rules.android.AndroidNeverLinkLibrariesProvider;
 import com.google.devtools.build.lib.rules.android.AndroidNeverlinkAspect;
+import com.google.devtools.build.lib.rules.android.AndroidOptimizedJarInfo;
 import com.google.devtools.build.lib.rules.android.AndroidPreDexJarProvider;
 import com.google.devtools.build.lib.rules.android.AndroidProguardInfo;
 import com.google.devtools.build.lib.rules.android.AndroidResourcesInfo;
@@ -425,7 +427,9 @@ public class BazelRuleClassProvider {
                   AndroidBinaryDataInfo.PROVIDER,
                   AndroidBinaryNativeLibsInfo.PROVIDER,
                   BaselineProfileProvider.PROVIDER,
-                  AndroidNeverLinkLibrariesProvider.PROVIDER);
+                  AndroidNeverLinkLibrariesProvider.PROVIDER,
+                  AndroidOptimizedJarInfo.PROVIDER,
+                  AndroidDexInfo.PROVIDER);
           builder.addStarlarkBootstrap(bootstrap);
 
           try {

@@ -33,7 +33,7 @@ public class RepoSpecTest {
     RepoSpec repoSpec =
         RepoSpec.builder()
             .setRuleClassName("local_repository")
-            .setAttributes(Dict.immutableCopyOf(Map.of("path", "/foo/bar")))
+            .setAttributes(Dict.immutableCopyOf(ImmutableMap.of("path", "/foo/bar")))
             .build();
     assertThat(repoSpec.isNativeRepoRule()).isTrue();
     assertThat(repoSpec.ruleClassName()).isEqualTo("local_repository");
@@ -47,7 +47,7 @@ public class RepoSpecTest {
         RepoSpec.builder()
             .setBzlFile("//pkg:repo.bzl")
             .setRuleClassName("my_repo")
-            .setAttributes(Dict.immutableCopyOf(Map.of("attr1", "foo", "attr2", "bar")))
+            .setAttributes(Dict.immutableCopyOf(ImmutableMap.of("attr1", "foo", "attr2", "bar")))
             .build();
     assertThat(repoSpec.isNativeRepoRule()).isFalse();
     assertThat(repoSpec.bzlFile()).hasValue("//pkg:repo.bzl");

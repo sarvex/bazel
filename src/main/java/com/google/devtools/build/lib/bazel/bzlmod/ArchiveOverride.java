@@ -18,6 +18,7 @@ package com.google.devtools.build.lib.bazel.bzlmod;
 import com.google.auto.value.AutoValue;
 import com.google.devtools.build.lib.bazel.bzlmod.BazelModuleInspectorValue.AugmentedModule.ResolutionReason;
 import com.google.devtools.build.lib.cmdline.RepositoryName;
+import net.starlark.java.eval.StarlarkInt;
 import net.starlark.java.eval.StarlarkList;
 
 /** Specifies that a module should be retrieved from an archive. */
@@ -30,7 +31,7 @@ public abstract class ArchiveOverride implements NonRegistryOverride {
       StarlarkList<String> patchCmds,
       String integrity,
       String stripPrefix,
-      int patchStrip) {
+      StarlarkInt patchStrip) {
     return new AutoValue_ArchiveOverride(
         urls, patches, patchCmds, integrity, stripPrefix, patchStrip);
   }
@@ -51,7 +52,7 @@ public abstract class ArchiveOverride implements NonRegistryOverride {
   public abstract String getStripPrefix();
 
   /** The number of path segments to strip from the paths in the supplied patches. */
-  public abstract int getPatchStrip();
+  public abstract StarlarkInt getPatchStrip();
 
   /** Returns the {@link RepoSpec} that defines this repository. */
   @Override

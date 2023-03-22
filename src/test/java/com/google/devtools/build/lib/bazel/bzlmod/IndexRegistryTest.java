@@ -38,7 +38,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
-import java.util.Map;
 import java.util.Optional;
 import net.starlark.java.eval.Dict;
 import net.starlark.java.eval.Mutability;
@@ -155,7 +154,8 @@ public class IndexRegistryTest extends FoundationTestCase {
             new ArchiveRepoSpecBuilder()
                 .setRepoName("foorepo")
                 .setUrls(
-                    StarlarkList.of(Mutability.IMMUTABLE,
+                    StarlarkList.of(
+                        Mutability.IMMUTABLE,
                         "https://mirror.bazel.build/mysite.com/thing.zip",
                         "file:///home/bazel/mymirror/mysite.com/thing.zip",
                         "http://mysite.com/thing.zip"))
@@ -171,16 +171,20 @@ public class IndexRegistryTest extends FoundationTestCase {
             new ArchiveRepoSpecBuilder()
                 .setRepoName("barrepo")
                 .setUrls(
-                    StarlarkList.of(Mutability.IMMUTABLE,
+                    StarlarkList.of(
+                        Mutability.IMMUTABLE,
                         "https://mirror.bazel.build/example.com/archive.jar?with=query",
                         "file:///home/bazel/mymirror/example.com/archive.jar?with=query",
                         "https://example.com/archive.jar?with=query"))
                 .setIntegrity("sha256-bleh")
                 .setStripPrefix("")
                 .setRemotePatches(
-                    Dict.copyOf(Mutability.IMMUTABLE,
-                        Map.of(server.getUrl() + "/modules/bar/2.0/patches/1.fix-this.patch", "sha256-lol",
-                        server.getUrl() + "/modules/bar/2.0/patches/2.fix-that.patch",
+                    Dict.copyOf(
+                        Mutability.IMMUTABLE,
+                        ImmutableMap.of(
+                            server.getUrl() + "/modules/bar/2.0/patches/1.fix-this.patch",
+                            "sha256-lol",
+                            server.getUrl() + "/modules/bar/2.0/patches/2.fix-that.patch",
                             "sha256-kek")))
                 .setRemotePatchStrip(3)
                 .build());
@@ -205,7 +209,8 @@ public class IndexRegistryTest extends FoundationTestCase {
             RepoSpec.builder()
                 .setRuleClassName("local_repository")
                 .setAttributes(
-                    Dict.immutableCopyOf(Map.of("name", "foorepo", "path", "/hello/bar/project_x")))
+                    Dict.immutableCopyOf(
+                        ImmutableMap.of("name", "foorepo", "path", "/hello/bar/project_x")))
                 .build());
   }
 
@@ -228,7 +233,7 @@ public class IndexRegistryTest extends FoundationTestCase {
         .isEqualTo(
             new ArchiveRepoSpecBuilder()
                 .setRepoName("foorepo")
-                .setUrls(StarlarkList.of(Mutability.IMMUTABLE,"http://mysite.com/thing.zip"))
+                .setUrls(StarlarkList.of(Mutability.IMMUTABLE, "http://mysite.com/thing.zip"))
                 .setIntegrity("sha256-blah")
                 .setStripPrefix("pref")
                 .setRemotePatches(Dict.empty())
@@ -293,5 +298,34 @@ public class IndexRegistryTest extends FoundationTestCase {
             ImmutableMap.of(
                 Version.parse("1.0"),
                 "red-pill 1.0 is yanked due to CVE-2000-101, please upgrade to 2.0"));
+  }
+
+  @Test
+  public void testArchiveWithExplicitType() throws Exception {
+    server.serve(
+        "/modules/archive_type/1.0/source.json",
+        "{",
+        "  \"url\": \"https://mysite.com/thing?format=zip\",",
+        "  \"integrity\": \"sha256-blah\",",
+        "  \"archive_type\": \"zip\"",
+        "}");
+    server.start();
+
+    Registry registry = registryFactory.getRegistryWithUrl(server.getUrl());
+    assertThat(
+            registry.getRepoSpec(
+                createModuleKey("archive_type", "1.0"),
+                RepositoryName.create("archive_type_repo"),
+                reporter))
+        .isEqualTo(
+            new ArchiveRepoSpecBuilder()
+                .setRepoName("archive_type_repo")
+                .setUrls(ImmutableList.of("https://mysite.com/thing?format=zip"))
+                .setIntegrity("sha256-blah")
+                .setStripPrefix("")
+                .setArchiveType("zip")
+                .setRemotePatches(ImmutableMap.of())
+                .setRemotePatchStrip(0)
+                .build());
   }
 }
