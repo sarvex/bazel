@@ -15,6 +15,7 @@
 
 package com.google.devtools.build.lib.bazel.bzlmod;
 
+import com.google.api.client.util.Strings;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import net.starlark.java.eval.Dict;
 import net.starlark.java.eval.Mutability;
