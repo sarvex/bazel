@@ -38,6 +38,7 @@ import com.google.devtools.build.skyframe.SkyValue;
 import com.google.gson.JsonIOException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /** Reads the contents of the lock file into its value. */
@@ -53,7 +54,7 @@ public class BazelLockFileFunction implements SkyFunction {
 
   private static final BazelLockFileValue EMPTY_LOCKFILE =
       BazelLockFileValue.create(
-          BazelLockFileValue.LOCK_FILE_VERSION, "", EMPTY_FLAGS, ImmutableMap.of());
+          BazelLockFileValue.LOCK_FILE_VERSION, "", EMPTY_FLAGS, ImmutableMap.of(), ImmutableMap.of());
 
   public BazelLockFileFunction(Path rootDirectory) {
     this.rootDirectory = rootDirectory;
@@ -86,21 +87,22 @@ public class BazelLockFileFunction implements SkyFunction {
   /**
    * Updates the stored module in the lock file (ModuleHash, Flags & Dependency graph)
    *
-   * @param hashedModule The hash of the current module file
+   * @param moduleFileHash The hash of the current module file
    * @param resolvedDepGraph The resolved dependency graph from the module file
    */
   public static void updateLockedModule(
-      String hashedModule,
-      ImmutableMap<ModuleKey, Module> resolvedDepGraph,
       Path rootDirectory,
-      BzlmodFlagsAndEnvVars flags)
+      String moduleFileHash,
+      BzlmodFlagsAndEnvVars flags,
+      ImmutableMap<String, String> localOverrideHashes,
+      ImmutableMap<ModuleKey, Module> resolvedDepGraph)
       throws BazelDepGraphFunctionException {
     RootedPath lockfilePath =
         RootedPath.toRootedPath(Root.fromPath(rootDirectory), LabelConstants.MODULE_LOCKFILE_NAME);
 
     BazelLockFileValue value =
         BazelLockFileValue.create(
-            BazelLockFileValue.LOCK_FILE_VERSION, hashedModule, flags, resolvedDepGraph);
+            BazelLockFileValue.LOCK_FILE_VERSION, moduleFileHash, flags, localOverrideHashes, resolvedDepGraph);
     try {
       FileSystemUtils.writeContent(lockfilePath.asPath(), UTF_8, LOCKFILE_GSON.toJson(value));
     } catch (IOException e) {
