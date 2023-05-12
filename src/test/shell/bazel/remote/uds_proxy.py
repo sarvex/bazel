@@ -49,13 +49,12 @@ def proxy(src_sock, dst_address):
       while True:
         readable, _, _ = select.select([src_sock, dst_sock], [], [])
         if src_sock in readable:
-          data = src_sock.recv(4096)
-          if not data:
+          if data := src_sock.recv(4096):
+            dst_sock.sendall(data)
+          else:
             return
-          dst_sock.sendall(data)
         if dst_sock in readable:
-          data = dst_sock.recv(4096)
-          if data:
+          if data := dst_sock.recv(4096):
             src_sock.sendall(data)
 
 

@@ -83,8 +83,12 @@ def namedtuple(typename, field_names):
 
     # Execute the template string in a temporary namespace and
     # support tracing utilities by setting a value for frame.f_globals['__name__']
-    namespace = dict(_itemgetter=_itemgetter, __name__='namedtuple_%s' % typename,
-                     _property=property, _tuple=tuple)
+    namespace = dict(
+        _itemgetter=_itemgetter,
+        __name__=f'namedtuple_{typename}',
+        _property=property,
+        _tuple=tuple,
+    )
     try:
         exec(template, namespace)
     except SyntaxError:

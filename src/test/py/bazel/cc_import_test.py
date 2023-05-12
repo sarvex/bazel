@@ -61,20 +61,18 @@ class CcImportTest(test_base.TestBase):
             'cc_import(',
             '  name = "A",',
             '  static_library = "//lib:libA_archive",',
-            '  shared_library = "//lib:libA.so",'
-            if not system_provided else '',
-            # On Windows, we always need the interface library
-            '  interface_library = "//lib:libA_ifso",'
-            if self.IsWindows() else (
+            '  shared_library = "//lib:libA.so",' if not system_provided else '',
+            '  interface_library = "//lib:libA_ifso",' if self.IsWindows() else (
                 # On Unix, we use .so file as interface library
                 # if system_provided is true
                 '  interface_library = "//lib:libA.so",'
                 if system_provided else ''),
             '  hdrs = ["a.h"],' if provide_header else '',
-            '  alwayslink = %s,' % str(alwayslink),
-            '  system_provided = %s,' % str(system_provided),
+            f'  alwayslink = {str(alwayslink)},',
+            f'  system_provided = {str(system_provided)},',
             ')',
-        ])
+        ],
+    )
 
     self.ScratchFile('lib/a.cc', [
         '#include <stdio.h>',
@@ -105,14 +103,17 @@ class CcImportTest(test_base.TestBase):
         'void HelloWorld();',
     ])
 
-    self.ScratchFile('main/BUILD', [
-        'cc_binary(',
-        '  name = "B",',
-        '  srcs = ["b.cc"],',
-        '  deps = ["//lib:A",],',
-        '  linkstatic = %s,' % str(linkstatic),
-        ')',
-    ])
+    self.ScratchFile(
+        'main/BUILD',
+        [
+            'cc_binary(',
+            '  name = "B",',
+            '  srcs = ["b.cc"],',
+            '  deps = ["//lib:A",],',
+            f'  linkstatic = {str(linkstatic)},',
+            ')',
+        ],
+    )
 
     self.ScratchFile('main/b.cc', [
         '#include <stdio.h>',
@@ -138,7 +139,7 @@ class CcImportTest(test_base.TestBase):
     exit_code, _, stderr = self.RunBazel(['build', '//main:B'])
     self.AssertExitCode(exit_code, 0, stderr)
 
-    b_bin = os.path.join(bazel_bin, 'main/B' + suffix)
+    b_bin = os.path.join(bazel_bin, f'main/B{suffix}')
     self.assertTrue(os.path.exists(b_bin))
     exit_code, stdout, stderr = self.RunProgram([b_bin])
     self.AssertExitCode(exit_code, 0, stderr)
@@ -153,7 +154,7 @@ class CcImportTest(test_base.TestBase):
     exit_code, _, stderr = self.RunBazel(['build', '//main:B'])
     self.AssertExitCode(exit_code, 0, stderr)
 
-    b_bin = os.path.join(bazel_bin, 'main/B' + suffix)
+    b_bin = os.path.join(bazel_bin, f'main/B{suffix}')
     self.assertTrue(os.path.exists(b_bin))
     exit_code, stdout, stderr = self.RunProgram([b_bin])
     self.AssertExitCode(exit_code, 0, stderr)
@@ -168,7 +169,7 @@ class CcImportTest(test_base.TestBase):
     exit_code, _, stderr = self.RunBazel(['build', '//main:B'])
     self.AssertExitCode(exit_code, 0, stderr)
 
-    b_bin = os.path.join(bazel_bin, 'main/B' + suffix)
+    b_bin = os.path.join(bazel_bin, f'main/B{suffix}')
     self.assertTrue(os.path.exists(b_bin))
     if self.IsWindows():
       self.assertTrue(os.path.exists(os.path.join(bazel_bin, 'main/libA.so')))

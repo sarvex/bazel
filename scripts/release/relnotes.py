@@ -44,15 +44,13 @@ def extract_relnotes(commit_message_lines):
       in_relnote = True
       line = line[len(m[0]):]
       if m[1] == "INC":
-        line = "**[Incompatible]** " + line.strip()
+        line = f"**[Incompatible]** {line.strip()}"
     line = line.strip()
     if in_relnote and line:
       relnote_lines.append(line)
   relnote = " ".join(relnote_lines)
   relnote_lower = relnote.strip().lower().rstrip(".")
-  if relnote_lower == "n/a" or relnote_lower == "none":
-    return None
-  return relnote
+  return None if relnote_lower in {"n/a", "none"} else relnote
 
 
 def get_relnotes_between(base, head):
@@ -80,8 +78,10 @@ def get_relnotes_between(base, head):
 def get_external_authors_between(base, head):
   """Gets all external authors for commits between `base` and `head`."""
   authors = git("log", f"{base}..{head}", "--format=%aN|%aE")
-  authors = set(author.partition("|")[0].rstrip() for author in authors
-                if not author.endswith("@google.com"))
+  authors = {
+      author.partition("|")[0].rstrip()
+      for author in authors if not author.endswith("@google.com")
+  }
   return ", ".join(sorted(authors, key=str.casefold))
 
 

@@ -26,7 +26,7 @@ class ProgressStep:
     self.show_done = show_done
 
   def __enter__(self):
-    print(self.msg + "...", flush=True, end="")
+    print(f"{self.msg}...", flush=True, end="")
     self.start_time = time.perf_counter()
 
   def __exit__(self, exc_type, exc_value, traceback):

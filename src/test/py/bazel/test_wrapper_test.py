@@ -465,10 +465,10 @@ class TestWrapperTest(test_base.TestBase):
     ] + flags)
     self.AssertExitCode(exit_code, 0, stderr)
 
-    actual = []
-    for line in stderr + stdout:
-      if line.startswith('arg='):
-        actual.append(str(line[len('arg='):]))
+    actual = [
+        str(line[len('arg='):]) for line in stderr + stdout
+        if line.startswith('arg=')
+    ]
     self.assertListEqual(
         [
             '(foo)',
@@ -575,13 +575,13 @@ class TestWrapperTest(test_base.TestBase):
     self.AssertExitCode(exit_code, 0, stderr)
     bazel_testlogs = bazel_testlogs[0]
 
-    exit_code, _, stderr = self.RunBazel([
+    exit_code, _, stderr = self.RunBazel(([
         'test',
         '//foo:xml_test',
         '-t-',
         '--test_output=errors',
-        '--%sexperimental_split_xml_generation' % ('' if split_xml else 'no'),
-    ] + flags)
+        f"--{'' if split_xml else 'no'}experimental_split_xml_generation",
+    ] + flags))
     self.AssertExitCode(exit_code, 0, stderr)
 
     test_xml = os.path.join(bazel_testlogs, 'foo', 'xml_test', 'test.xml')
@@ -624,13 +624,13 @@ class TestWrapperTest(test_base.TestBase):
     self.AssertExitCode(exit_code, 0, stderr)
     bazel_testlogs = bazel_testlogs[0]
 
-    exit_code, _, stderr = self.RunBazel([
+    exit_code, _, stderr = self.RunBazel(([
         'test',
         '//foo:xml2_test',
         '-t-',
         '--test_output=errors',
-        '--%sexperimental_split_xml_generation' % ('' if split_xml else 'no'),
-    ] + flags)
+        f"--{'' if split_xml else 'no'}experimental_split_xml_generation",
+    ] + flags))
     self.AssertExitCode(exit_code, 0, stderr)
 
     test_xml = os.path.join(bazel_testlogs, 'foo', 'xml2_test', 'test.xml')
@@ -671,11 +671,12 @@ class TestWrapperTest(test_base.TestBase):
               layout,
               target,
           ])
-          self.AssertExitCode(exit_code, 0, [
-              'flag=%s' % flag,
-              'layout=%s' % layout,
-              'target=%s' % target,
-          ] + stderr)
+          self.AssertExitCode(
+              exit_code,
+              0,
+              ([f'flag={flag}', f'layout={layout}', f'target={target}'] +
+               stderr),
+          )
 
   def _AssertAddCurrentDirectoryToPathTest(self, flags):
     exit_code, _, stderr = self.RunBazel([

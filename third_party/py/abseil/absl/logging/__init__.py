@@ -289,10 +289,8 @@ def set_stderrthreshold(s):
     FLAGS.stderrthreshold = s
   else:
     raise ValueError(
-        'set_stderrthreshold only accepts integer absl logging level '
-        'from -3 to 1, or case-insensitive string values '
-        "'debug', 'info', 'warn', 'error', and 'fatal'. "
-        'But found "{}" ({}).'.format(s, type(s)))
+        f"""set_stderrthreshold only accepts integer absl logging level from -3 to 1, or case-insensitive string values 'debug', 'info', 'warn', 'error', and 'fatal'. But found "{s}" ({type(s)})."""
+    )
 
 
 def fatal(msg, *args, **kwargs):
@@ -405,8 +403,7 @@ def log(level, msg, *args, **kwargs):
     # Treat this as vlog, 1 is equivalent to DEBUG.
     standard_level = converter.STANDARD_DEBUG - (level - 1)
   else:
-    if level < converter.ABSL_FATAL:
-      level = converter.ABSL_FATAL
+    level = max(level, converter.ABSL_FATAL)
     standard_level = converter.absl_to_standard(level)
 
   _absl_logger.log(standard_level, msg, *args, **kwargs)
@@ -477,13 +474,13 @@ def find_log_dir_and_names(program_name=None, log_dir=None):
 
     # Prepend py_ to files so that python code gets a unique file, and
     # so that C++ libraries do not try to write to the same log files as us.
-    program_name = 'py_%s' % program_name
+    program_name = f'py_{program_name}'
 
   actual_log_dir = find_log_dir(log_dir=log_dir)
 
   username = getpass.getuser()
   hostname = socket.gethostname()
-  file_prefix = '%s.%s.%s.log' % (program_name, hostname, username)
+  file_prefix = f'{program_name}.{hostname}.{username}.log'
 
   return actual_log_dir, file_prefix, program_name
 
@@ -589,7 +586,7 @@ class PythonHandler(logging.StreamHandler):
     # os.symlink is not available on Windows Python 2.
     if getattr(os, 'symlink', None):
       # Create a symlink to the log file with a canonical name.
-      symlink = os.path.join(actual_log_dir, symlink_prefix + '.INFO')
+      symlink = os.path.join(actual_log_dir, f'{symlink_prefix}.INFO')
       try:
         if os.path.islink(symlink):
           os.unlink(symlink)
@@ -799,15 +796,14 @@ class ABSLLogger(logging.getLoggerClass()):
           (code.co_filename, code.co_name) not in f_to_skip):
         if six.PY2:
           return (code.co_filename, frame.f_lineno, code.co_name)
-        else:
-          sinfo = None
-          if stack_info:
-            out = io.StringIO()
-            out.write('Stack (most recent call last):\n')
-            traceback.print_stack(frame, file=out)
-            sinfo = out.getvalue().rstrip('\n')
-            out.close()
-          return (code.co_filename, frame.f_lineno, code.co_name, sinfo)
+        sinfo = None
+        if stack_info:
+          out = io.StringIO()
+          out.write('Stack (most recent call last):\n')
+          traceback.print_stack(frame, file=out)
+          sinfo = out.getvalue().rstrip('\n')
+          out.close()
+        return (code.co_filename, frame.f_lineno, code.co_name, sinfo)
       frame = frame.f_back
 
   def critical(self, msg, *args, **kwargs):

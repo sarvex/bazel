@@ -14,6 +14,7 @@
 
 """A Python test reporter that generates test reports in JUnit XML format."""
 
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -43,10 +44,8 @@ _escape_xml_attr_conversions = {
     '\n': '&#xA;',
     '\t': '&#x9;',
     '\r': '&#xD;',
-    ' ': '&#x20;'}
-_escape_xml_attr_conversions.update(_control_character_conversions)
-
-
+    ' ': '&#x20;',
+} | _control_character_conversions
 # When class or module level function fails, unittest/suite.py adds a
 # _ErrorHolder instance instead of a real TestCase, and it has a description
 # like "setUpClass (__main__.MyTestCase)".
@@ -82,11 +81,7 @@ def _escape_cdata(s):
 # This prevents bad interactions with tests that stub out time.
 _time_copy = time.time
 
-if hasattr(traceback, '_some_str'):
-  # Use the traceback module str function to format safely.
-  _safe_str = traceback._some_str
-else:
-  _safe_str = str  # pylint: disable=invalid-name
+_safe_str = traceback._some_str if hasattr(traceback, '_some_str') else str
 
 
 class _TestCaseResult(object):
@@ -119,14 +114,12 @@ class _TestCaseResult(object):
     # Worse, unittest uses _ErrorHandler instances to represent class / module
     # level failures.
     test_desc = test.id() or str(test)
-    # Check if it's something like "setUpClass (__main__.TestCase)".
-    match = _CLASS_OR_MODULE_LEVEL_TEST_DESC_REGEX.match(test_desc)
-    if match:
+    if match := _CLASS_OR_MODULE_LEVEL_TEST_DESC_REGEX.match(test_desc):
       name = match.group(1)
       full_class_name = match.group(2)
     else:
       class_name = unittest.util.strclass(test.__class__)
-      if test_desc.startswith(class_name + '.'):
+      if test_desc.startswith(f'{class_name}.'):
         # In a typical unittest.TestCase scenario, test.id() returns with
         # a class name formatted using unittest.util.strclass.
         name = test_desc[len(class_name)+1:]
@@ -206,19 +199,18 @@ class _TestSuiteResult(object):
         break
 
   def print_xml_summary(self, stream):
-    overall_test_count = sum([len(x) for x in self.suites.values()])
+    overall_test_count = sum(len(x) for x in self.suites.values())
     overall_failures = sum(self.failure_counts.values())
     overall_errors = sum(self.error_counts.values())
-    overall_time = 0
-    for tests in self.suites.values():
-      overall_time += sum([x.run_time for x in tests])
+    overall_time = sum(
+        sum(x.run_time for x in tests) for tests in self.suites.values())
     overall_args = (overall_test_count, overall_failures, overall_errors,
                     overall_time)
     stream.write('<testsuites name="" tests="%d" failures="%d" '
                  'errors="%d" time="%.1f">\n' % overall_args)
     for suite_name in self.suites:
       suite = self.suites[suite_name]
-      suite_time = sum([x.run_time for x in suite])
+      suite_time = sum(x.run_time for x in suite)
       failures = self.failure_counts[suite_name]
       errors = self.error_counts[suite_name]
       args = (suite_name, len(suite), failures, errors, suite_time)
@@ -385,9 +377,12 @@ class _TextAndXMLTestResult(unittest.TextTestResult):
   def addUnexpectedSuccess(self, test):
     super(_TextAndXMLTestResult, self).addUnexpectedSuccess(test)
     test_name = test.id() or str(test)
-    error_summary = ('error', '', '',
-                     'Test case %s should have failed, but passed.'
-                     % (test_name))
+    error_summary = (
+        'error',
+        '',
+        '',
+        f'Test case {test_name} should have failed, but passed.',
+    )
     self.add_pending_test_case_result(test, error_summary=error_summary)
 
   def printErrors(self):

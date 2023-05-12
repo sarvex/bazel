@@ -29,7 +29,7 @@ def main(argv):
     return 1
 
   if argv[1] != "get":
-    eprint("Unknown command '{}'".format(argv[1]))
+    eprint(f"Unknown command '{argv[1]}'")
     return 1
 
   request = json.load(sys.stdin)
@@ -82,7 +82,7 @@ def main(argv):
         },
     }
   else:
-    eprint("Unknown uri '{}'".format(request["uri"]))
+    eprint(f"""Unknown uri '{request["uri"]}'""")
     return 1
   json.dump(response, sys.stdout)
   return 0

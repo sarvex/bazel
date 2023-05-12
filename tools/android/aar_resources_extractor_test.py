@@ -46,8 +46,7 @@ class AarResourcesExtractorTest(unittest.TestCase):
 
   def DirContents(self, d):
     return [
-        _HostPath(path + "/" + f)
-        for (path, _, files) in os.walk(d)
+        _HostPath(f"{path}/{f}") for (path, _, files) in os.walk(d)
         for f in files
     ]
 
@@ -126,10 +125,10 @@ class AarResourcesExtractorTest(unittest.TestCase):
     aar_resources_extractor.ExtractDatabinding(aar, "setter_store.json",
                                                "out_dir/setter_store")
 
-    with open("out_dir/br/" + br_filepath, "r") as f:
+    with open(f"out_dir/br/{br_filepath}", "r") as f:
       self.assertEqual("br data", f.read())
 
-    with open("out_dir/setter_store/" + setter_store_filepath, "r") as f:
+    with open(f"out_dir/setter_store/{setter_store_filepath}", "r") as f:
       self.assertEqual("setter store data", f.read())
 
 

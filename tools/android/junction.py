@@ -101,7 +101,7 @@ class TempJunction(object):
     except OSError as e:
       # Another process may have already created this directory.
       if not os.path.isdir(path):
-        raise IOError("Could not create directory at '%s': %s" % (path, str(e)))
+        raise IOError(f"Could not create directory at '{path}': {str(e)}")
 
   @staticmethod
   def _MakeLinks(target, mkdtemp, max_path):

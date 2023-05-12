@@ -825,9 +825,13 @@ class SpecSignatureTest(unittest2.TestCase):
 
 
     def test_autospec_functions_with_self_in_odd_place(self):
+
+
+
         class Foo(object):
-            def f(a, self):
+            def f(self, self):
                 pass
+
 
         a = create_autospec(Foo)
         a.f(self=10)
@@ -908,7 +912,7 @@ class TestCallList(unittest2.TestCase):
 
 
     def test_propertymock(self):
-        p = patch('%s.SomeClass.one' % __name__, new_callable=PropertyMock)
+        p = patch(f'{__name__}.SomeClass.one', new_callable=PropertyMock)
         mock = p.start()
         try:
             SomeClass.one

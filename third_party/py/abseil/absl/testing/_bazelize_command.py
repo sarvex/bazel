@@ -35,15 +35,14 @@ def get_executable_path(py_binary_path):
     py_binary_path: string, the path of a py_binary that is in another Bazel
         target's data dependencies.
   """
-  if os.name == 'nt':
-    executable_path = py_binary_path + '.cmd'
-    if executable_path.startswith('\\\\?\\'):
-      # In Bazel 0.5.3 and Python 3, the paths starts with "\\?\".
-      # However, Python subprocess doesn't support those paths well.
-      # Strip them as we don't need the prefix.
-      # See this page for more informaton about "\\?\":
-      # https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247.
-      executable_path = executable_path[4:]
-    return executable_path
-  else:
+  if os.name != 'nt':
     return py_binary_path
+  executable_path = f'{py_binary_path}.cmd'
+  if executable_path.startswith('\\\\?\\'):
+    # In Bazel 0.5.3 and Python 3, the paths starts with "\\?\".
+    # However, Python subprocess doesn't support those paths well.
+    # Strip them as we don't need the prefix.
+    # See this page for more informaton about "\\?\":
+    # https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247.
+    executable_path = executable_path[4:]
+  return executable_path

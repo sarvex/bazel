@@ -56,7 +56,7 @@ class DexmanifestBuilder(object):
     self.checksums = set()
     self.tmpdir = None
     self.queue = Queue()
-    self.threads_list = list()
+    self.threads_list = []
 
   def __enter__(self):
     self.tmpdir = tempfile.mkdtemp()
@@ -76,11 +76,11 @@ class DexmanifestBuilder(object):
     h = hashlib.sha256()
     with open(filename, "rb") as f:
       while True:
-        data = f.read(65536)
-        if not data:
-          break
+        if data := f.read(65536):
+          h.update(data)
 
-        h.update(data)
+        else:
+          break
 
     return h.hexdigest(), input_dex_or_zip, zippath
 
@@ -109,8 +109,8 @@ class DexmanifestBuilder(object):
       zip_dex = "incremental_classes%d.dex" % self.output_dex_counter
       self.output_dex_counter += 1
       self.manifest_lines.append(
-          "%s %s %s %s" %
-          (input_dex_or_zip, zippath if zippath else "-", zip_dex, fs_checksum))
+          f'{input_dex_or_zip} {zippath if zippath else "-"} {zip_dex} {fs_checksum}'
+      )
 
   def ComputeChecksumConcurrently(self, input_dex_or_zip, zippath, dex):
     """Call Checksum concurrently to improve build performance when an app contains multiple dex files."""
@@ -143,7 +143,7 @@ class DexmanifestBuilder(object):
               continue
 
             input_dex_zip.extract(input_dex_dex, input_dex_dir)
-            fs_dex = input_dex_dir + "/" + input_dex_dex
+            fs_dex = f"{input_dex_dir}/{input_dex_dex}"
             self.ComputeChecksumConcurrently(input_filename, input_dex_dex,
                                              fs_dex)
       elif input_filename.endswith(".dex"):

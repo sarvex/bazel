@@ -81,8 +81,9 @@ def StubifyMobileInstall(manifest_string):
   application.set("{%s}name" % ANDROID, MOBILE_INSTALL_STUB_APPLICATION)
   application.attrib.pop("{%s}hasCode" % ANDROID, None)
   read_permission = manifest.findall(
-      './uses-permission[@android:name="%s"]' % READ_EXTERNAL_STORAGE,
-      namespaces={"android": ANDROID})
+      f'./uses-permission[@android:name="{READ_EXTERNAL_STORAGE}"]',
+      namespaces={"android": ANDROID},
+  )
 
   if not read_permission:
     read_permission = ElementTree.Element("uses-permission")
@@ -90,10 +91,10 @@ def StubifyMobileInstall(manifest_string):
     manifest.insert(0, read_permission)
 
   new_manifest = ElementTree.tostring(manifest)
-  app_package = manifest.get("package")
-  if not app_package:
+  if app_package := manifest.get("package"):
+    return (new_manifest, old_application, app_package)
+  else:
     raise BadManifestException("manifest tag does not have a package specified")
-  return (new_manifest, old_application, app_package)
 
 
 def StubifyInstantRun(manifest_string):
@@ -107,8 +108,7 @@ def StubifyInstantRun(manifest_string):
     Exception: if something goes wrong
   """
   manifest, application = _ParseManifest(manifest_string)
-  old_application = application.get("{%s}name" % ANDROID)
-  if old_application:
+  if old_application := application.get("{%s}name" % ANDROID):
     application.set("name", old_application)
   application.set("{%s}name" % ANDROID, INSTANT_RUN_BOOTSTRAP_APPLICATION)
   return ElementTree.tostring(manifest)

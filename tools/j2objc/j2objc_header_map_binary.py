@@ -57,15 +57,9 @@ def _get_file_map_entry(java_file_path, java_file):
     if isinstance(stripped_line, bytes):
       stripped_line_str = stripped_line.decode('utf-8', 'strict')
     elif not isinstance(stripped_line, (str, bytes)):
-      raise TypeError("not expecting type '%s'" % type(stripped_line_str))
-    package_statement = _PACKAGE_RE.search(stripped_line_str)
-
-    # We identified a potential package statement.
-    if package_statement:
-      preceding_characters = stripped_line[0:package_statement.start(1)]
-      # We have preceding characters before the package statement. We need to
-      # look further into them.
-      if preceding_characters:
+      raise TypeError(f"not expecting type '{type(stripped_line_str)}'")
+    if package_statement := _PACKAGE_RE.search(stripped_line_str):
+      if preceding_characters := stripped_line[:package_statement.start(1)]:
         # Skip comment line.
         if preceding_characters.startswith('//'):
           continue
@@ -79,8 +73,8 @@ def _get_file_map_entry(java_file_path, java_file):
           continue
       package_name = package_statement.group(2)
       class_name = os.path.splitext(os.path.basename(java_file_path))[0]
-      header_file = os.path.splitext(java_file_path)[0] + '.h'
-      return (package_name + '.' + class_name, header_file)
+      header_file = f'{os.path.splitext(java_file_path)[0]}.h'
+      return f'{package_name}.{class_name}', header_file
   return None
 
 
@@ -100,15 +94,14 @@ def main():
       help='The output mapping file')
 
   args, _ = parser.parse_known_args()
-  class_to_header_map = dict()
+  class_to_header_map = {}
 
   # Process the source files.
   if args.source_files:
     source_files = args.source_files.split(',')
     for source_file in source_files:
       with open(source_file, 'r') as f:
-        entry = _get_file_map_entry(source_file, f)
-        if entry:
+        if entry := _get_file_map_entry(source_file, f):
           class_to_header_map[entry[0]] = entry[1]
 
   # Process the source jars.
@@ -119,8 +112,7 @@ def main():
         for jar_entry in jar.namelist():
           if jar_entry.endswith('.java'):
             with jar.open(jar_entry) as jar_entry_file:
-              entry = _get_file_map_entry(jar_entry, jar_entry_file)
-              if entry:
+              if entry := _get_file_map_entry(jar_entry, jar_entry_file):
                 class_to_header_map[entry[0]] = entry[1]
 
   # Generate the output header mapping file.
@@ -128,7 +120,7 @@ def main():
     with open(args.output_mapping_file, 'w') as output_mapping_file:
       for class_name in sorted(class_to_header_map):
         header_path = class_to_header_map[class_name]
-        output_mapping_file.write(class_name + '=' + header_path + '\n')
+        output_mapping_file.write(f'{class_name}={header_path}' + '\n')
 
 if __name__ == '__main__':
   main()

@@ -52,7 +52,7 @@ def _ExtractTargetPackageToInstrument(xml_content, path):
   instrumentation_elems = tree.iterfind(
       ".//instrumentation[@{0}]".format(package_key))
 
-  package_names = set(e.attrib[package_key] for e in instrumentation_elems)
+  package_names = {e.attrib[package_key] for e in instrumentation_elems}
 
   if not package_names:
     raise ManifestError("No <instrumentation> tag containing "

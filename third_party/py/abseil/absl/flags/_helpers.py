@@ -14,6 +14,7 @@
 
 """Internal helper functions for Abseil Python flags library."""
 
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -40,8 +41,6 @@ from six.moves import range  # pylint: disable=redefined-builtin
 
 _DEFAULT_HELP_WIDTH = 80  # Default width of help output.
 _MIN_HELP_WIDTH = 40  # Minimal "sane" width of help output. We assume that any
-                      # value below 40 is unreasonable.
-
 # Define the allowed error rate in an input string to get suggestions.
 #
 # We lean towards a high threshold because we tend to be matching a phrase,
@@ -62,7 +61,7 @@ _ILLEGAL_XML_CHARS_REGEX = re.compile(
 # This is a set of module ids for the modules that disclaim key flags.
 # This module is explicitly added to this set so that we never consider it to
 # define key flag.
-disclaim_module_ids = set([id(sys.modules[__name__])])
+disclaim_module_ids = {id(sys.modules[__name__])}
 
 
 # Define special flags here so that help may be generated for them.
@@ -214,7 +213,7 @@ def get_flag_suggestions(attempt, longopt_list):
 
   # Find close approximations in flag prefixes.
   # This also handles the case where the flag is spelled right but ambiguous.
-  distances = [(_damerau_levenshtein(attempt, option[0:len(attempt)]), option)
+  distances = [(_damerau_levenshtein(attempt, option[:len(attempt)]), option)
                for option in option_names]
   distances.sort(key=lambda t: t[0])
 
@@ -337,22 +336,22 @@ def flag_dict_to_args(flag_map):
   """
   for key, value in six.iteritems(flag_map):
     if value is None:
-      yield '--%s' % key
+      yield f'--{key}'
     elif isinstance(value, bool):
       if value:
-        yield '--%s' % key
+        yield f'--{key}'
       else:
-        yield '--no%s' % key
+        yield f'--no{key}'
     elif isinstance(value, (bytes, type(u''))):
       # We don't want strings to be handled like python collections.
-      yield '--%s=%s' % (key, value)
+      yield f'--{key}={value}'
     else:
       # Now we attempt to deal with collections.
       try:
-        yield '--%s=%s' % (key, ','.join(str(item) for item in value))
+        yield f"--{key}={','.join(str(item) for item in value)}"
       except TypeError:
         # Default case.
-        yield '--%s=%s' % (key, value)
+        yield f'--{key}={value}'
 
 
 def trim_docstring(docstring):
@@ -380,14 +379,12 @@ def trim_docstring(docstring):
   # Determine minimum indentation (first line doesn't count):
   indent = max_indent
   for line in lines[1:]:
-    stripped = line.lstrip()
-    if stripped:
+    if stripped := line.lstrip():
       indent = min(indent, len(line) - len(stripped))
   # Remove indentation (first line is special):
   trimmed = [lines[0].strip()]
   if indent < max_indent:
-    for line in lines[1:]:
-      trimmed.append(line[indent:].rstrip())
+    trimmed.extend(line[indent:].rstrip() for line in lines[1:])
   # Strip off trailing and leading blank lines:
   while trimmed and not trimmed[-1]:
     trimmed.pop()

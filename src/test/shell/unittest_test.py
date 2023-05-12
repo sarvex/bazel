@@ -489,9 +489,9 @@ run_suite "empty test suite"
 
     result.assertSuccess("tests to filter")
     # The sharding logic is shifted by 1, starts with 2nd shard.
-    result.assertTestPassed("test_a" + str(index ^ 1))
-    result.assertLogMessage("running a" + str(index ^ 1))
-    result.assertNotLogMessage("running a" + str(index))
+    result.assertTestPassed(f"test_a{str(index ^ 1)}")
+    result.assertLogMessage(f"running a{str(index ^ 1)}")
+    result.assertNotLogMessage(f"running a{str(index)}")
     result.assertNotLogMessage("running bb")
 
   def test_arg_runs_only_matching_test_and_issues_warning(self):

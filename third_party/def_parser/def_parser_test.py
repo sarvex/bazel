@@ -68,7 +68,12 @@ class DEFParserTest(test_base.TestBase):
     objfilelist = self.ScratchFile('objfilelist', [objfile])
 
     output_def = self.Path('x.def');
-    self.RunProgram([self.Rlocation('io_bazel/third_party/def_parser/def_parser.exe'), output_def, 'my_x.dll', '@' + objfilelist])
+    self.RunProgram([
+        self.Rlocation('io_bazel/third_party/def_parser/def_parser.exe'),
+        output_def,
+        'my_x.dll',
+        f'@{objfilelist}',
+    ])
     self.assertTrue(os.path.isfile(output_def))
 
     with open(output_def, 'r') as def_file:

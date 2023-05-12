@@ -256,9 +256,7 @@ class CmdLineDifferTest(unittest.TestCase):
         }])
 
     baz_path = os.path.join("root", "baz")
-    expected_error = ("Aquery output 'before' change contains an action "
-                      "that generates the following outputs that aquery "
-                      "output 'after' change doesn't:\n{}\n\n".format(baz_path))
+    expected_error = f"Aquery output 'before' change contains an action that generates the following outputs that aquery output 'after' change doesn't:\n{baz_path}\n\n"
     mock_stdout = io.StringIO()
     attrs = ["cmdline"]
     with mock.patch("sys.stdout", mock_stdout):
@@ -357,13 +355,25 @@ class CmdLineDifferTest(unittest.TestCase):
 
     expected_error_one = "\n".join([
         "Difference in the action that generates the following output(s):",
-        "\t{}".format(baz_path), "--- before", "+++ after", "@@ -1 +1,2 @@",
-        " -c", "+-d", "\n"
+        f"\t{baz_path}",
+        "--- before",
+        "+++ after",
+        "@@ -1 +1,2 @@",
+        " -c",
+        "+-d",
+        "\n",
     ])
     expected_error_two = "\n".join([
         "Difference in the action that generates the following output(s):",
-        "\t{}".format(bar_path), "\t{}".format(foo_path), "--- before",
-        "+++ after", "@@ -1,2 +1,2 @@", " -a", "--d", "+-b", "\n"
+        f"\t{bar_path}",
+        f"\t{foo_path}",
+        "--- before",
+        "+++ after",
+        "@@ -1,2 +1,2 @@",
+        " -a",
+        "--d",
+        "+-b",
+        "\n",
     ])
     attrs = ["cmdline"]
 
@@ -453,9 +463,14 @@ class CmdLineDifferTest(unittest.TestCase):
     bar_path = os.path.join("root", "bar")
     expected_error_one = "\n".join([
         "Difference in the action that generates the following output(s):",
-        "\t{}".format(bar_path), "\t{}".format(foo_path), "--- before",
-        "+++ after", "@@ -1,2 +1 @@", "-{}".format(bar_path),
-        " {}".format(foo_path), "\n"
+        f"\t{bar_path}",
+        f"\t{foo_path}",
+        "--- before",
+        "+++ after",
+        "@@ -1,2 +1 @@",
+        f"-{bar_path}",
+        f" {foo_path}",
+        "\n",
     ])
     attrs = ["inputs"]
 

@@ -68,7 +68,7 @@ class BazelExternalRepositoryTest(test_base.TestBase):
         'load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")',
         'http_archive(',
         '    name = "six_archive",',
-        '    urls = ["http://%s:%s/six-1.10.0.tar.gz"],' % (ip, port),
+        f'    urls = ["http://{ip}:{port}/six-1.10.0.tar.gz"],',
         '    sha256 = '
         '"105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",',
         '    strip_prefix = "six-1.10.0",',
@@ -118,7 +118,7 @@ class BazelExternalRepositoryTest(test_base.TestBase):
         'load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")',
         'http_archive(',
         '    name = "archive_with_symlink",',
-        '    urls = ["http://%s:%s/archive_with_symlink.zip"],' % (ip, port),
+        f'    urls = ["http://{ip}:{port}/archive_with_symlink.zip"],',
         '    build_file = "@//:archive_with_symlink.BUILD",',
         '    sha256 = ',
         '  "c9c32a48ff65f6319885246b1bfc704e60dd72fb0405dfafdffe403421a4c83a",'
@@ -146,7 +146,7 @@ class BazelExternalRepositoryTest(test_base.TestBase):
         'load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")',
         'http_archive(',
         '    name = "archive_with_symlink",',
-        '    urls = ["http://%s:%s/archive_with_symlink.tar.gz"],' % (ip, port),
+        f'    urls = ["http://{ip}:{port}/archive_with_symlink.tar.gz"],',
         '    build_file = "@//:archive_with_symlink.BUILD",',
         '    sha256 = ',
         '  "5ea20285db1b18134e4efe608e41215687f03cd3e3fdd7529860b175fc12fe76",'
@@ -169,20 +169,23 @@ class BazelExternalRepositoryTest(test_base.TestBase):
     self.assertEqual(exit_code, 0, os.linesep.join(stderr))
 
   def _CreatePyWritingStarlarkRule(self, print_string):
-    self.ScratchFile('repo/foo.bzl', [
-        'def _impl(ctx):',
-        '  ctx.actions.write(',
-        '      output = ctx.outputs.out,',
-        '      content = """from __future__ import print_function',
-        'print("%s")""",' % print_string,
-        '  )',
-        '  return [DefaultInfo(files = depset(direct = [ctx.outputs.out]))]',
-        '',
-        'gen_py = rule(',
-        '    implementation = _impl,',
-        "    outputs = {'out': '%{name}.py'},",
-        ')',
-    ])
+    self.ScratchFile(
+        'repo/foo.bzl',
+        [
+            'def _impl(ctx):',
+            '  ctx.actions.write(',
+            '      output = ctx.outputs.out,',
+            '      content = """from __future__ import print_function',
+            f'print("{print_string}")""",',
+            '  )',
+            '  return [DefaultInfo(files = depset(direct = [ctx.outputs.out]))]',
+            '',
+            'gen_py = rule(',
+            '    implementation = _impl,',
+            "    outputs = {'out': '%{name}.py'},",
+            ')',
+        ],
+    )
 
   def testNewLocalRepositoryNoticesFileChangeInRepoRoot(self):
     """Regression test for https://github.com/bazelbuild/bazel/issues/7063."""

@@ -186,7 +186,7 @@ def _non_string_or_bytes_iterable(obj):
 
 def _format_parameter_list(testcase_params):
   if isinstance(testcase_params, collections.Mapping):
-    return ', '.join('%s=%s' % (argname, _clean_repr(value))
+    return ', '.join(f'{argname}={_clean_repr(value)}'
                      for argname, value in six.iteritems(testcase_params))
   elif _non_string_or_bytes_iterable(testcase_params):
     return ', '.join(map(_clean_repr, testcase_params))
@@ -248,7 +248,7 @@ class _ParameterizedTestIter(object):
         if isinstance(testcase_params, collections.Mapping):
           if _NAMED_DICT_KEY not in testcase_params:
             raise RuntimeError(
-                'Dict for named tests must contain key "%s"' % _NAMED_DICT_KEY)
+                f'Dict for named tests must contain key "{_NAMED_DICT_KEY}"')
           # Create a new dict to avoid modifying the supplied testcase_params.
           testcase_name = testcase_params[_NAMED_DICT_KEY]
           testcase_params = {k: v for k, v in six.iteritems(testcase_params)
@@ -277,17 +277,16 @@ class _ParameterizedTestIter(object):
         # To keep test names descriptive, only the original method name is used.
         # To make sure test names are unique, we add a unique descriptive suffix
         # __x_extra_id__ for every test.
-        extra_id = '(%s)' % (_format_parameter_list(testcase_params),)
+        extra_id = f'({_format_parameter_list(testcase_params)})'
         extra_ids[extra_id] += 1
         while extra_ids[extra_id] > 1:
           extra_id = '%s (%d)' % (extra_id, extra_ids[extra_id])
           extra_ids[extra_id] += 1
         bound_param_test.__x_extra_id__ = extra_id
       else:
-        raise RuntimeError('%s is not a valid naming type.' % (naming_type,))
+        raise RuntimeError(f'{naming_type} is not a valid naming type.')
 
-      bound_param_test.__doc__ = '%s(%s)' % (
-          bound_param_test.__name__, _format_parameter_list(testcase_params))
+      bound_param_test.__doc__ = f'{bound_param_test.__name__}({_format_parameter_list(testcase_params)})'
       if test_method.__doc__:
         bound_param_test.__doc__ += '\n%s' % (test_method.__doc__,)
       return bound_param_test
@@ -409,7 +408,7 @@ class TestGeneratorMetaclass(type):
   parameters decorator.
   """
 
-  def __new__(mcs, class_name, bases, dct):
+  def __new__(cls, class_name, bases, dct):
     test_method_ids = dct.setdefault('_test_method_ids', {})
     for name, obj in six.iteritems(dct.copy()):
       if (name.startswith(unittest.TestLoader.testMethodPrefix) and
@@ -433,7 +432,7 @@ class TestGeneratorMetaclass(type):
           # That's why it should only inherit it if it does not exist.
           test_method_ids.setdefault(test_method, test_method_id)
 
-    return type.__new__(mcs, class_name, bases, dct)
+    return type.__new__(cls, class_name, bases, dct)
 
 
 def _update_class_dict_for_param_test_case(
@@ -455,12 +454,13 @@ def _update_class_dict_for_param_test_case(
     else:
       original_name = name
       new_name = '%s%d' % (original_name, idx)
-    assert new_name not in dct, (
-        'Name of parameterized test case "%s" not unique' % (new_name,))
+    assert (
+        new_name
+        not in dct), f'Name of parameterized test case "{new_name}" not unique'
     dct[new_name] = func
     test_method_id = original_name + getattr(func, '__x_extra_id__', '')
-    assert test_method_id not in test_method_ids.values(), (
-        'Id of parameterized test case "%s" not unique' % (test_method_id,))
+    assert (test_method_id not in test_method_ids.values()
+            ), f'Id of parameterized test case "{test_method_id}" not unique'
     test_method_ids[new_name] = test_method_id
 
 
@@ -468,9 +468,7 @@ class TestCase(six.with_metaclass(TestGeneratorMetaclass, absltest.TestCase)):
   """Base class for test cases using the parameters decorator."""
 
   def __str__(self):
-    return '%s (%s)' % (
-        self._test_method_ids.get(self._testMethodName, self._testMethodName),
-        unittest.util.strclass(self.__class__))
+    return f'{self._test_method_ids.get(self._testMethodName, self._testMethodName)} ({unittest.util.strclass(self.__class__)})'
 
   def id(self):
     """Returns the descriptive ID of the test.
@@ -481,11 +479,7 @@ class TestCase(six.with_metaclass(TestGeneratorMetaclass, absltest.TestCase)):
     Returns:
       The test id.
     """
-    return '%s.%s' % (
-        unittest.util.strclass(self.__class__),
-        # When a test method is NOT decorated, it doesn't exist in
-        # _test_method_ids. Use the _testMethodName directly.
-        self._test_method_ids.get(self._testMethodName, self._testMethodName))
+    return f'{unittest.util.strclass(self.__class__)}.{self._test_method_ids.get(self._testMethodName, self._testMethodName)}'
 
 
 # This function is kept CamelCase because it's used as a class's base class.

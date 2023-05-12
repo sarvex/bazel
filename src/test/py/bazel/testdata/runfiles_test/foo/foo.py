@@ -27,9 +27,9 @@ def IsWindows():
 
 def ChildBinaryName(lang):
   if IsWindows():
-    return "foo_ws/bar/bar-%s.exe" % lang
+    return f"foo_ws/bar/bar-{lang}.exe"
   else:
-    return "foo_ws/bar/bar-%s" % lang
+    return f"foo_ws/bar/bar-{lang}"
 
 
 def SplitToLines(stdouterr):
@@ -44,15 +44,12 @@ def SplitToLines(stdouterr):
 def main():
   print("Hello Python Foo!")
   r = runfiles.Create()
-  print("rloc=%s" % r.Rlocation("foo_ws/foo/datadep/hello.txt"))
+  print(f'rloc={r.Rlocation("foo_ws/foo/datadep/hello.txt")}')
 
   # Run a subprocess, propagate the runfiles envvar to it. The subprocess will
   # use this process's runfiles manifest or runfiles directory.
-  if IsWindows():
-    env = {"SYSTEMROOT": os.environ["SYSTEMROOT"]}
-  else:
-    env = {}
-  env.update(r.EnvVars())
+  env = {"SYSTEMROOT": os.environ["SYSTEMROOT"]} if IsWindows() else {}
+  env |= r.EnvVars()
   for lang in ["py", "java", "sh", "cc"]:
     p = subprocess.Popen(
         [r.Rlocation(ChildBinaryName(lang))],
@@ -61,12 +58,10 @@ def main():
         stderr=subprocess.PIPE)
     out, err = p.communicate()
     out = SplitToLines(out)
-    if len(out) >= 2:
-      print(out[0])  # e.g. "Hello Python Bar!"
-      print(out[1])  # e.g. "rloc=/tmp/foo_ws/bar/bar-py-data.txt"
-    else:
-      raise Exception(
-          "ERROR: error running bar-%s: %s" % (lang, SplitToLines(err)))
+    if len(out) < 2:
+      raise Exception(f"ERROR: error running bar-{lang}: {SplitToLines(err)}")
+    print(out[0])  # e.g. "Hello Python Bar!"
+    print(out[1])  # e.g. "rloc=/tmp/foo_ws/bar/bar-py-data.txt"
 
 
 if __name__ == "__main__":

@@ -86,7 +86,7 @@ def IsValidPath(path):
   if dirs[:2] == ['meta-inf', 'services']:
     return True
 
-  return not any(dir in EXCLUDED_DIRECTORIES for dir in dirs)
+  return all(dir not in EXCLUDED_DIRECTORIES for dir in dirs)
 
 
 def ExtractResources(input_jar, output_zip):

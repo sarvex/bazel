@@ -86,7 +86,7 @@ class TarFileWriter(object):
                            `depth` argument.
     """
     if not (name == self.root_directory or name.startswith('/')
-            or name.startswith(self.root_directory + '/')):
+            or name.startswith(f'{self.root_directory}/')):
       name = os.path.join(self.root_directory, name)
     if mtime is None:
       mtime = DEFAULT_MTIME
@@ -98,14 +98,15 @@ class TarFileWriter(object):
       # The x bit is set only to if the read bit is set.
       dirmode = (mode | ((0o444 & mode) >> 2)) if mode else mode
       self.add_file(
-          name + '/',
+          f'{name}/',
           tarfile.DIRTYPE,
           uid=uid,
           gid=gid,
           uname=uname,
           gname=gname,
           mtime=mtime,
-          mode=dirmode)
+          mode=dirmode,
+      )
       if depth <= 0:
         raise self.Error('Recursion depth exceeded, probably in '
                          'an infinite directory loop.')
@@ -170,8 +171,8 @@ class TarFileWriter(object):
       # Recurse into directory
       self.add_dir(name, file_content, uid, gid, uname, gname, mtime, mode)
       return
-    if not (name == self.root_directory or name.startswith('/') or
-            name.startswith(self.root_directory + '/')):
+    if not (name == self.root_directory or name.startswith('/')
+            or name.startswith(f'{self.root_directory}/')):
       name = os.path.join(self.root_directory, name)
     if kind == tarfile.DIRTYPE:
       name = name.rstrip('/')

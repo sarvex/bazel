@@ -41,15 +41,10 @@ class BazelLockfileTest(test_base.TestBase):
     self.ScratchFile(
         '.bazelrc',
         [
-            # In ipv6 only network, this has to be enabled.
-            # 'startup --host_jvm_args=-Djava.net.preferIPv6Addresses=true',
             'common --enable_bzlmod',
-            'common --registry=' + self.main_registry.getURL(),
-            # We need to have BCR here to make sure built-in modules like
-            # bazel_tools can work.
+            f'common --registry={self.main_registry.getURL()}',
             'common --registry=https://bcr.bazel.build',
             'common --verbose_failures',
-            # Set an explicit Java language version
             'common --java_language_version=8',
             'common --tool_java_language_version=8',
             'common --lockfile_mode=update',

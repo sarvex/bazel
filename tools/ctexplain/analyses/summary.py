@@ -47,7 +47,7 @@ def analyze(cts: Tuple[ConfiguredTarget, ...]) -> _Summary:
     targets.add(ct.label)
     label_count[ct.label] = label_count.setdefault(ct.label, 0) + 1
   configured_targets = len(cts)
-  repeated_targets = sum([1 for count in label_count.values() if count > 1])
+  repeated_targets = sum(1 for count in label_count.values() if count > 1)
 
   return _Summary(
       len(configurations), len(targets), configured_targets, repeated_targets)

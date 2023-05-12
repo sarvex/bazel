@@ -54,7 +54,7 @@ class TestCallable(unittest2.TestCase):
 
 
     def test_patch_spec(self):
-        patcher = patch('%s.X' % __name__, spec=True)
+        patcher = patch(f'{__name__}.X', spec=True)
         mock = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -66,7 +66,7 @@ class TestCallable(unittest2.TestCase):
 
 
     def test_patch_spec_set(self):
-        patcher = patch('%s.X' % __name__, spec_set=True)
+        patcher = patch(f'{__name__}.X', spec_set=True)
         mock = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -78,7 +78,7 @@ class TestCallable(unittest2.TestCase):
 
 
     def test_patch_spec_instance(self):
-        patcher = patch('%s.X' % __name__, spec=X())
+        patcher = patch(f'{__name__}.X', spec=X())
         mock = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -87,7 +87,7 @@ class TestCallable(unittest2.TestCase):
 
 
     def test_patch_spec_set_instance(self):
-        patcher = patch('%s.X' % __name__, spec_set=X())
+        patcher = patch(f'{__name__}.X', spec_set=X())
         mock = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -96,6 +96,7 @@ class TestCallable(unittest2.TestCase):
 
 
     def test_patch_spec_callable_class(self):
+
         class CallableX(X):
             def __call__(self):
                 pass
@@ -115,7 +116,7 @@ class TestCallable(unittest2.TestCase):
 
         for arg in 'spec', 'spec_set':
             for Klass in CallableX, Sub, Multi, OldStyle, OldStyleSub:
-                patcher = patch('%s.X' % __name__, **{arg: Klass})
+                patcher = patch(f'{__name__}.X', **{arg: Klass})
                 mock = patcher.start()
 
                 try:

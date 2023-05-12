@@ -13,6 +13,7 @@
 # limitations under the License.
 """A wrapper to have a portable SHA-256 tool."""
 
+
 # TODO(dmarting): instead of this tool we should make SHA-256 of artifacts
 # available in Starlark.
 from __future__ import absolute_import
@@ -24,14 +25,14 @@ import sys
 if __name__ == "__main__":
   if len(sys.argv) != 3:
     # pylint: disable=superfluous-parens
-    print("Usage: %s input output" % sys.argv[0])
+    print(f"Usage: {sys.argv[0]} input output")
     sys.exit(-1)
   with open(sys.argv[2], "w") as outputfile:
     with open(sys.argv[1], "rb") as inputfile:
       sha256 = hashlib.sha256()
       while True:
-        data = inputfile.read(65536)
-        if not data:
+        if data := inputfile.read(65536):
+          sha256.update(data)
+        else:
           break
-        sha256.update(data)
       outputfile.write(sha256.hexdigest())

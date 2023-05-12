@@ -84,19 +84,17 @@ class PywrapperTest(test_base.TestBase):
   def setup_tool(self, cmd):
     """Copies a command from its system location to the test directory."""
     path = which(cmd)
-    self.assertIsNotNone(
-        path, msg="Could not locate '%s' command on PATH" % cmd)
+    self.assertIsNotNone(path, msg=f"Could not locate '{cmd}' command on PATH")
     # On recent MacOs versions, copying the coreutils tools elsewhere doesn't
     # work -- they simply fail with "Killed: 9". To workaround that, just
     # re-exec the actual binary.
-    self.ScratchFile("dir/" + cmd,
-                     ["#!/bin/sh", 'exec {} "$@"'.format(path)],
+    self.ScratchFile(f"dir/{cmd}", ["#!/bin/sh", f'exec {path} "$@"'],
                      executable=True)
 
   def locate_runfile(self, runfile_path):
     resolved_path = self.Rlocation(runfile_path)
-    self.assertIsNotNone(
-        resolved_path, msg="Could not locate %s in runfiles" % runfile_path)
+    self.assertIsNotNone(resolved_path,
+                         msg=f"Could not locate {runfile_path} in runfiles")
     return resolved_path
 
   def setUp(self):

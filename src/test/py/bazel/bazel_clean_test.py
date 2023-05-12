@@ -111,8 +111,7 @@ class BazelCleanTest(test_base.TestBase):
   def _findMatch(self, pattern, items):
     r = re.compile(pattern)
     for line in items:
-      matcher = r.search(line)
-      if matcher:
+      if matcher := r.search(line):
         return matcher
     return None
 

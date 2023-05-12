@@ -112,7 +112,7 @@ class BazelApi():
     base_args = ["config", "--output=json"]
     (returncode, stdout, stderr) = self.run_bazel(base_args + [config_hash])
     if returncode != 0:
-      raise ValueError("Could not get config: " + stderr)
+      raise ValueError(f"Could not get config: {stderr}")
     config_json = json.loads(os.linesep.join(stdout))
     fragments = frozendict({
         _base_name(entry["name"]):
@@ -151,13 +151,13 @@ def _parse_cquery_result_line(line: str) -> ConfiguredTarget:
   config_hash = tokens[1][1:-1]
   if config_hash == "null":
     fragments = ()
-  else:
-    if tokens[2][0] != "[" or tokens[2][-1] != "]":
-      raise ValueError(f"{tokens[2]} in {line} not surrounded by [] brackets")
+  elif tokens[2][0] == "[" and tokens[2][-1] == "]":
     # The fragments list looks like '[Fragment1, Fragment2, ...]'. Split the
     # whole line on ' [' to get just this list, then remove the final ']', then
     # split again on ', ' to convert it to a structured tuple.
-    fragments = tuple(line.split(" [")[1][0:-1].split(", "))
+    fragments = tuple(line.split(" [")[1][:-1].split(", "))
+  else:
+    raise ValueError(f"{tokens[2]} in {line} not surrounded by [] brackets")
   return ConfiguredTarget(
       label=label,
       config=None,  # Not yet available: we'll need `bazel config` to get this.

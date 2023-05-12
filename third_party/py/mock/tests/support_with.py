@@ -49,7 +49,7 @@ except ImportError:
             if self._record:
                 args.append("record=True")
             name = type(self).__name__
-            return "%s(%s)" % (name, ", ".join(args))
+            return f'{name}({", ".join(args)})'
 
         def __enter__(self):
             if self._entered:
@@ -81,9 +81,7 @@ except ImportError:
             local_values = locals()
             for attr in self._WARNING_DETAILS:
                 setattr(self, attr, local_values[attr])
-            self._category_name = None
-            if category.__name__:
-                self._category_name = category.__name__
+            self._category_name = category.__name__ if category.__name__ else None
 
 
 def examine_warnings(func):

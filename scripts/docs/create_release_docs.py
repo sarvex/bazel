@@ -62,11 +62,10 @@ def validate_flag(name):
   Returns:
     The value of the flag, if set.
   """
-  value = getattr(FLAGS, name, None)
-  if value:
+  if value := getattr(FLAGS, name, None):
     return value
 
-  print("Missing --{} flag.".format(name), file=sys.stderr)
+  print(f"Missing --{name} flag.", file=sys.stderr)
   exit(1)
 
 
@@ -121,8 +120,9 @@ def try_extract(archive_path, output_dir):
   _, ext = os.path.splitext(archive_path)
   open_func = _ARCHIVE_FUNCTIONS.get(ext)
   if not open_func:
-    raise ValueError("File {}: Invalid file extension '{}'. Allowed: {}".format(
-        archive_path, ext, _ARCHIVE_FUNCTIONS.keys.join(", ")))
+    raise ValueError(
+        f"""File {archive_path}: Invalid file extension '{ext}'. Allowed: {_ARCHIVE_FUNCTIONS.keys.join(", ")}"""
+    )
 
   with open_func(archive_path, "r") as archive:
     archive.extractall(output_dir)

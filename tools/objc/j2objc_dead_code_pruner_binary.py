@@ -120,10 +120,9 @@ def BuildReachableFileSet(entry_classes, reachability_tree, header_mapping,
   # Translated files from package-info.java are also added to the entry files
   # because they are needed to resolve ObjC class names with prefixes and these
   # files may also have dependencies.
-  for transpiled_file in reachability_tree:
-    if transpiled_file.endswith('package-info'):
-      transpiled_entry_files.append(transpiled_file)
-
+  transpiled_entry_files.extend(transpiled_file
+                                for transpiled_file in reachability_tree
+                                if transpiled_file.endswith('package-info'))
   reachable_files = set()
   for transpiled_entry_file in transpiled_entry_files:
     reachable_files.add(transpiled_entry_file)
@@ -210,7 +209,7 @@ def _DuplicatedFiles(archive_source_file_mapping):
     A list containing files with duplicated base names.
   """
   duplicated_files = []
-  dict_with_duplicates = dict()
+  dict_with_duplicates = {}
 
   for source_files in archive_source_file_mapping.values():
     for source_file in source_files:
@@ -223,7 +222,7 @@ def _DuplicatedFiles(archive_source_file_mapping):
     for basename in dict_with_duplicates:
       if len(dict_with_duplicates[basename]) > 1:
         duplicated_files.extend(dict_with_duplicates[basename])
-    dict_with_duplicates = dict()
+    dict_with_duplicates = {}
 
   return duplicated_files
 
@@ -343,54 +342,39 @@ def PruneArchiveFile(input_archive, output_archive, dummy_archive,
   j2objc_cmd = ''
   if input_archive in archive_source_file_mapping:
     source_files = archive_source_file_mapping[input_archive]
-    unreachable_object_names = []
-
-    for source_file in source_files:
-      if os.path.splitext(source_file)[0] not in reachable_files_set:
-        unreachable_object_names.append(
-            os.path.basename(os.path.splitext(source_file)[0]))
-
-    # There are unreachable objects in the archive to prune
-    if unreachable_object_names:
+    if unreachable_object_names := [
+        os.path.basename(os.path.splitext(source_file)[0])
+        for source_file in source_files
+        if os.path.splitext(source_file)[0] not in reachable_files_set
+    ]:
       # If all objects in the archive are unreachable, just copy over a dummy
       # archive that contains no object
       if len(unreachable_object_names) == len(source_files):
-        j2objc_cmd = 'cp %s %s' % (shlex.quote(dummy_archive),
-                                   shlex.quote(output_archive))
-      # Else we need to prune the archive of unreachable objects
+        j2objc_cmd = f'cp {shlex.quote(dummy_archive)} {shlex.quote(output_archive)}'
       else:
         cmd_env['ZERO_AR_DATE'] = '1'
         # Copy the input archive to the output location
-        j2objc_cmd += 'cp %s %s && ' % (shlex.quote(input_archive),
-                                        shlex.quote(output_archive))
+        j2objc_cmd += f'cp {shlex.quote(input_archive)} {shlex.quote(output_archive)} && '
         # Make the output archive editable
-        j2objc_cmd += 'chmod +w %s && ' % (shlex.quote(output_archive))
+        j2objc_cmd += f'chmod +w {shlex.quote(output_archive)} && '
         # Remove the unreachable objects from the archive
         unreachable_object_names = MatchObjectNamesInArchive(
             xcrunwrapper, input_archive, unreachable_object_names)
-        j2objc_cmd += '%s ar -d -s %s %s && ' % (
-            shlex.quote(xcrunwrapper),
-            shlex.quote(output_archive),
-            ' '.join(shlex.quote(uon) for uon in unreachable_object_names))
+        j2objc_cmd += f"{shlex.quote(xcrunwrapper)} ar -d -s {shlex.quote(output_archive)} {' '.join(shlex.quote(uon) for uon in unreachable_object_names)} && "
         # Update the table of content of the archive file
-        j2objc_cmd += '%s ranlib %s' % (shlex.quote(xcrunwrapper),
-                                        shlex.quote(output_archive))
-    # There are no unreachable objects, we just copy over the original archive
+        j2objc_cmd += (
+            f'{shlex.quote(xcrunwrapper)} ranlib {shlex.quote(output_archive)}'
+        )
     else:
-      j2objc_cmd = 'cp %s %s' % (shlex.quote(input_archive),
-                                 shlex.quote(output_archive))
-  # The archive cannot be pruned by J2ObjC dead code removal, just copy over
-  # the original archive
+      j2objc_cmd = f'cp {shlex.quote(input_archive)} {shlex.quote(output_archive)}'
   else:
-    j2objc_cmd = 'cp %s %s' % (shlex.quote(input_archive),
-                               shlex.quote(output_archive))
+    j2objc_cmd = f'cp {shlex.quote(input_archive)} {shlex.quote(output_archive)}'
 
   try:
     subprocess.check_output(
         j2objc_cmd, stderr=subprocess.STDOUT, shell=True, env=cmd_env)
   except OSError as e:
-    raise Exception(
-        'executing command failed: %s (%s)' % (j2objc_cmd, e.strerror))
+    raise Exception(f'executing command failed: {j2objc_cmd} ({e.strerror})')
 
   # "Touch" the output file.
   # Prevents a pre-Xcode-8 bug in which passing zero-date archive files to ld
@@ -410,7 +394,7 @@ def BuildArtifactSourceTree(files, file_open=open):
    A dict mapping build artifacts (possibly generated source files) to the
    corresponding direct dependent source files.
   """
-  tree = dict()
+  tree = {}
   if not files:
     return tree
   for filename in files.split(','):
@@ -418,12 +402,7 @@ def BuildArtifactSourceTree(files, file_open=open):
       for line in f:
         split = line.strip().split(':')
         entry = split[0]
-        if len(split) == 1:
-          # The build system allows for adding just the entry if the dependency
-          # is the same name
-          dep = split[0]
-        else:
-          dep = split[1]
+        dep = split[0] if len(split) == 1 else split[1]
         if entry in tree:
           tree[entry].append(dep)
         else:

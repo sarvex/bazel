@@ -31,23 +31,19 @@ class BzlmodQueryTest(test_base.TestBase):
     self.main_registry = BazelRegistry(
         os.path.join(self.registries_work_dir, 'main'))
     self.main_registry.createCcModule('aaa', '1.0', {'ccc': '1.2'}) \
-      .createCcModule('aaa', '1.1') \
-      .createCcModule('bbb', '1.0', {'aaa': '1.0'}, {'aaa': 'com_foo_bar_aaa'}) \
-      .createCcModule('ccc', '1.2')
+        .createCcModule('aaa', '1.1') \
+        .createCcModule('bbb', '1.0', {'aaa': '1.0'}, {'aaa': 'com_foo_bar_aaa'}) \
+        .createCcModule('ccc', '1.2')
 
     self.ScratchFile(
         '.bazelrc',
         [
-            # In ipv6 only network, this has to be enabled.
-            # 'startup --host_jvm_args=-Djava.net.preferIPv6Addresses=true',
             'common --experimental_enable_bzlmod',
-            'common --registry=' + self.main_registry.getURL(),
-            # We need to have BCR here to make sure built-in modules like
-            # bazel_tools can work.
+            f'common --registry={self.main_registry.getURL()}',
             'common --registry=https://bcr.bazel.build',
-            # Disable yanked version check so we are not affected BCR changes.
             'common --allow_yanked_versions=all',
-        ])
+        ],
+    )
     self.ScratchFile('WORKSPACE')
     # The existence of WORKSPACE.bzlmod prevents WORKSPACE prefixes or suffixes
     # from being used; this allows us to test built-in modules actually work
@@ -168,10 +164,9 @@ class BzlmodQueryTest(test_base.TestBase):
         "cmd = 'cat $(SRCS) > $@')"
     ])
     self.RunBazel(['build', '//:gen_rinne'], allow_failure=False)
-    output_file = open('bazel-bin/gen_rinne.txt', 'r')
-    self.assertIsNotNone(output_file)
-    output = output_file.readlines()
-    output_file.close()
+    with open('bazel-bin/gen_rinne.txt', 'r') as output_file:
+      self.assertIsNotNone(output_file)
+      output = output_file.readlines()
     self.assertListEqual(['@my_repo//:lib_aaa\n'], output)
 
   def testQueryCannotResolveRepoMapping_malformedModuleFile(self):

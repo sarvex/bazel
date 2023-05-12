@@ -47,17 +47,14 @@ class RunfilesTest(test_base.TestBase):
     self.AssertExitCode(exit_code, 0, stderr)
     bazel_bin = stdout[0]
 
-    exit_code, _, stderr = self.RunBazel([
-        "build",
-        "--verbose_failures",
-        "//foo:runfiles-" + family
-    ])
+    exit_code, _, stderr = self.RunBazel(
+        ["build", "--verbose_failures", f"//foo:runfiles-{family}"])
     self.AssertExitCode(exit_code, 0, stderr)
 
     if test_base.TestBase.IsWindows():
-      bin_path = os.path.join(bazel_bin, "foo/runfiles-%s.exe" % family)
+      bin_path = os.path.join(bazel_bin, f"foo/runfiles-{family}.exe")
     else:
-      bin_path = os.path.join(bazel_bin, "foo/runfiles-" + family)
+      bin_path = os.path.join(bazel_bin, f"foo/runfiles-{family}")
 
     self.assertTrue(os.path.exists(bin_path))
 
@@ -66,30 +63,30 @@ class RunfilesTest(test_base.TestBase):
     self.AssertExitCode(exit_code, 0, stderr)
     # 10 output lines: 2 from foo-<family>, and 2 from each of bar-<lang>.
     if len(stdout) != 10:
-      self.fail("stdout: %s" % stdout)
+      self.fail(f"stdout: {stdout}")
 
-    self.assertEqual(stdout[0], "Hello %s Foo!" % lang_name)
+    self.assertEqual(stdout[0], f"Hello {lang_name} Foo!")
     self.assertRegex(stdout[1], "^rloc=.*/foo/datadep/hello.txt")
     self.assertNotIn("__ignore_me__", stdout[1])
 
     with open(stdout[1].split("=", 1)[1], "r") as f:
       lines = [l.strip() for l in f.readlines()]
     if len(lines) != 1:
-      self.fail("lines: %s" % lines)
+      self.fail(f"lines: {lines}")
     self.assertEqual(lines[0], "world")
 
     i = 2
     for lang in [("py", "Python", "bar.py"), ("java", "Java", "Bar.java"),
                  ("sh", "Bash", "bar.sh"), ("cc", "C++", "bar.cc")]:
-      self.assertEqual(stdout[i], "Hello %s Bar!" % lang[1])
-      self.assertRegex(stdout[i + 1], "^rloc=.*/bar/bar-%s-data.txt" % lang[0])
+      self.assertEqual(stdout[i], f"Hello {lang[1]} Bar!")
+      self.assertRegex(stdout[i + 1], f"^rloc=.*/bar/bar-{lang[0]}-data.txt")
       self.assertNotIn("__ignore_me__", stdout[i + 1])
 
       with open(stdout[i + 1].split("=", 1)[1], "r") as f:
         lines = [l.strip() for l in f.readlines()]
       if len(lines) != 1:
-        self.fail("lines(%s): %s" % (lang[0], lines))
-      self.assertEqual(lines[0], "data for " + lang[2])
+        self.fail(f"lines({lang[0]}): {lines}")
+      self.assertEqual(lines[0], f"data for {lang[2]}")
 
       i += 2
 
@@ -135,33 +132,34 @@ class RunfilesTest(test_base.TestBase):
     for lang in [("py", "Python", "bar.py"), ("java", "Java", "Bar.java"),
                  ("sh", "Bash", "bar.sh"), ("cc", "C++", "bar.cc")]:
       if test_base.TestBase.IsWindows():
-        bin_path = os.path.join(bazel_bin, "bar/bar-%s.exe" % lang[0])
+        bin_path = os.path.join(bazel_bin, f"bar/bar-{lang[0]}.exe")
       else:
-        bin_path = os.path.join(bazel_bin, "bar/bar-" + lang[0])
+        bin_path = os.path.join(bazel_bin, f"bar/bar-{lang[0]}")
 
       self.assertTrue(os.path.exists(bin_path))
 
       exit_code, stdout, stderr = self.RunProgram(
           [bin_path],
-          env_remove=set([
+          env_remove={
               "RUNFILES_MANIFEST_FILE",
               "RUNFILES_MANIFEST_ONLY",
               "RUNFILES_DIR",
               "JAVA_RUNFILES",
-          ]),
-          env_add={"TEST_SRCDIR": "__ignore_me__"})
+          },
+          env_add={"TEST_SRCDIR": "__ignore_me__"},
+      )
       self.AssertExitCode(exit_code, 0, stderr)
       if len(stdout) < 2:
-        self.fail("stdout(%s): %s" % (lang[0], stdout))
-      self.assertEqual(stdout[0], "Hello %s Bar!" % lang[1])
-      self.assertRegex(stdout[1], "^rloc=.*/bar/bar-%s-data.txt" % lang[0])
+        self.fail(f"stdout({lang[0]}): {stdout}")
+      self.assertEqual(stdout[0], f"Hello {lang[1]} Bar!")
+      self.assertRegex(stdout[1], f"^rloc=.*/bar/bar-{lang[0]}-data.txt")
       self.assertNotIn("__ignore_me__", stdout[1])
 
       with open(stdout[1].split("=", 1)[1], "r") as f:
         lines = [l.strip() for l in f.readlines()]
       if len(lines) != 1:
-        self.fail("lines(%s): %s" % (lang[0], lines))
-      self.assertEqual(lines[0], "data for " + lang[2])
+        self.fail(f"lines({lang[0]}): {lines}")
+      self.assertEqual(lines[0], f"data for {lang[2]}")
 
   def testRunfilesLibrariesFindRunfilesWithRunfilesManifestEnvvar(self):
     for s, t, exe in [
@@ -188,30 +186,32 @@ class RunfilesTest(test_base.TestBase):
 
     for lang in [("java", "Java"), ("sh", "Bash"), ("cc", "C++")]:
       exit_code, _, stderr = self.RunBazel([
-          "build", "--verbose_failures", "--enable_runfiles=no",
-          "//bar:bar-" + lang[0]
+          "build",
+          "--verbose_failures",
+          "--enable_runfiles=no",
+          f"//bar:bar-{lang[0]}",
       ])
       self.AssertExitCode(exit_code, 0, stderr)
 
       if test_base.TestBase.IsWindows():
-        bin_path = os.path.join(bazel_bin, "bar/bar-%s.exe" % lang[0])
+        bin_path = os.path.join(bazel_bin, f"bar/bar-{lang[0]}.exe")
       else:
-        bin_path = os.path.join(bazel_bin, "bar/bar-" + lang[0])
+        bin_path = os.path.join(bazel_bin, f"bar/bar-{lang[0]}")
 
-      manifest_path = bin_path + ".runfiles_manifest"
+      manifest_path = f"{bin_path}.runfiles_manifest"
       self.assertTrue(os.path.exists(bin_path))
       self.assertTrue(os.path.exists(manifest_path))
 
       # Create a copy of the runfiles manifest, replacing
       # "bar/bar-<lang>-data.txt" with a custom file.
-      mock_bar_dep = self.ScratchFile("bar-%s-mockdata.txt" % lang[0],
-                                      ["mock %s data" % lang[0]])
+      mock_bar_dep = self.ScratchFile(f"bar-{lang[0]}-mockdata.txt",
+                                      [f"mock {lang[0]} data"])
       if test_base.TestBase.IsWindows():
         # Runfiles manifests use forward slashes as path separators, even on
         # Windows.
         mock_bar_dep = mock_bar_dep.replace("\\", "/")
-      manifest_key = "foo_ws/bar/bar-%s-data.txt" % lang[0]
-      mock_manifest_line = manifest_key + " " + mock_bar_dep
+      manifest_key = f"foo_ws/bar/bar-{lang[0]}-data.txt"
+      mock_manifest_line = f"{manifest_key} {mock_bar_dep}"
       with open(manifest_path, "rt") as f:
         # Only rstrip newlines. Do not rstrip() completely, because that would
         # remove spaces too. This is necessary in order to have at least one
@@ -230,12 +230,12 @@ class RunfilesTest(test_base.TestBase):
             for line in f
         ]
 
-      substitute_manifest = self.ScratchFile(
-          "mock-%s.runfiles/MANIFEST" % lang[0], mock_manifest_data)
+      substitute_manifest = self.ScratchFile(f"mock-{lang[0]}.runfiles/MANIFEST",
+                                             mock_manifest_data)
 
       exit_code, stdout, stderr = self.RunProgram(
           [bin_path],
-          env_remove=set(["RUNFILES_DIR"]),
+          env_remove={"RUNFILES_DIR"},
           env_add={
               # On Linux/macOS, the Java launcher picks up JAVA_RUNFILES and
               # ignores RUNFILES_MANIFEST_FILE.
@@ -246,20 +246,21 @@ class RunfilesTest(test_base.TestBase):
               "RUNFILES_MANIFEST_FILE": substitute_manifest,
               "RUNFILES_MANIFEST_ONLY": "1",
               "TEST_SRCDIR": "__ignore_me__",
-          })
+          },
+      )
 
       self.AssertExitCode(exit_code, 0, stderr)
       if len(stdout) < 2:
-        self.fail("stdout: %s" % stdout)
-      self.assertEqual(stdout[0], "Hello %s Bar!" % lang[1])
-      self.assertRegex(stdout[1], "^rloc=" + mock_bar_dep)
+        self.fail(f"stdout: {stdout}")
+      self.assertEqual(stdout[0], f"Hello {lang[1]} Bar!")
+      self.assertRegex(stdout[1], f"^rloc={mock_bar_dep}")
       self.assertNotIn("__ignore_me__", stdout[1])
 
       with open(stdout[1].split("=", 1)[1], "r") as f:
         lines = [l.strip() for l in f.readlines()]
       if len(lines) != 1:
-        self.fail("lines: %s" % lines)
-      self.assertEqual(lines[0], "mock %s data" % lang[0])
+        self.fail(f"lines: {lines}")
+      self.assertEqual(lines[0], f"mock {lang[0]} data")
 
   def testLegacyExternalRunfilesOption(self):
     self.ScratchDir("A")
@@ -339,7 +340,7 @@ class RunfilesTest(test_base.TestBase):
     ])
     _, stdout, _ = self.RunBazel(["run", "//pkg:bin"])
     if len(stdout) != 2:
-      self.fail("stdout: %s" % stdout)
+      self.fail(f"stdout: {stdout}")
     self.assertEqual(stdout[0], "Hello, Bazel!")
     self.assertEqual(stdout[1], "Hello, World!")
 

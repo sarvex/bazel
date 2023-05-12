@@ -55,7 +55,7 @@ class BazelWindowsSymlinksTest(test_base.TestBase):
     exit_code, _, stderr = self.RunBazel(['build', '//foo:y'])
     self.AssertNotExitCode(exit_code, 0, stderr)
 
-    if not any(['is a dangling symbolic link' in l for l in stderr]):
+    if all('is a dangling symbolic link' not in l for l in stderr):
       self.fail('FAIL:\n | stderr:\n | %s' % '\n | '.join(stderr))
 
 

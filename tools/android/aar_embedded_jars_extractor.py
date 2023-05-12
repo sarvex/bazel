@@ -55,7 +55,7 @@ def ExtractEmbeddedJars(aar,
       # output_dir may be a temporary junction, so write the original
       # (unshortened) path to the params file
       singlejar_param_file.write(
-          (output_dir_orig + "/" + name + "\n").encode("utf-8"))
+          (f"{output_dir_orig}/{name}" + "\n").encode("utf-8"))
       aar.extract(name, output_dir)
 
 

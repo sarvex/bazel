@@ -131,7 +131,7 @@ class SingleFlagValidator(Validator):
     return [self.flag_name]
 
   def print_flags_with_values(self, flag_values):
-    return 'flag --%s=%s' % (self.flag_name, flag_values[self.flag_name].value)
+    return f'flag --{self.flag_name}={flag_values[self.flag_name].value}'
 
   def _get_input_to_checker_function(self, flag_values):
     """Given flag values, returns the input to be given to checker.
@@ -183,9 +183,9 @@ class MultiFlagsValidator(Validator):
 
   def print_flags_with_values(self, flag_values):
     prefix = 'flags '
-    flags_with_values = []
-    for key in self.flag_names:
-      flags_with_values.append('%s=%s' % (key, flag_values[key].value))
+    flags_with_values = [
+        f'{key}={flag_values[key].value}' for key in self.flag_names
+    ]
     return prefix + ', '.join(flags_with_values)
 
   def get_flags_names(self):
@@ -357,10 +357,12 @@ def mark_flag_as_required(flag_name, flag_values=_flagvalues.FLAGS):
         'Flag --%s has a non-None default value; therefore, '
         'mark_flag_as_required will pass even if flag is not specified in the '
         'command line!' % flag_name)
-  register_validator(flag_name,
-                     lambda value: value is not None,
-                     message='Flag --%s must be specified.' % flag_name,
-                     flag_values=flag_values)
+  register_validator(
+      flag_name,
+      lambda value: value is not None,
+      message=f'Flag --{flag_name} must be specified.',
+      flag_values=flag_values,
+  )
 
 
 def mark_flags_as_required(flag_names, flag_values=_flagvalues.FLAGS):
@@ -403,8 +405,7 @@ def mark_flags_as_mutual_exclusive(flag_names, required=False,
     flag_count = sum(1 for val in flags_dict.values() if val is not None)
     if flag_count == 1 or (not required and flag_count == 0):
       return True
-    message = ('%s one of (%s) must be specified.' %
-               ('Exactly' if required else 'At most', ', '.join(flag_names)))
+    message = f"{'Exactly' if required else 'At most'} one of ({', '.join(flag_names)}) must be specified."
     raise _exceptions.ValidationError(message)
 
   register_multi_flags_validator(

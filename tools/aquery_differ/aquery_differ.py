@@ -84,10 +84,7 @@ def _colorize(line):
   if line.startswith("+"):
     return GREEN % line
 
-  if line.startswith("-"):
-    return RED % line
-
-  return line
+  return RED % line if line.startswith("-") else line
 
 
 def _print_diff(output_files, before_val, after_val, attr, before_file,
@@ -177,11 +174,10 @@ def _map_output_files_to_command_line(actions, action_index_to_output_files):
     A map from output files (string of concatenated output artifacts paths)
     to the command line (a list of arguments).
   """
-  output_files_to_command_line = {}
-  for i, action in enumerate(actions):
-    output_files_to_command_line[
-        action_index_to_output_files[i]] = action.arguments
-  return output_files_to_command_line
+  return {
+      action_index_to_output_files[i]: action.arguments
+      for i, action in enumerate(actions)
+  }
 
 
 def _aquery_diff(before_proto, after_proto, attrs, before_file, after_file):
@@ -249,11 +245,10 @@ def to_absolute_path(path):
   path = os.path.expanduser(path)
   if os.path.isabs(path):
     return path
+  if "BUILD_WORKING_DIRECTORY" in os.environ:
+    return os.path.join(os.environ["BUILD_WORKING_DIRECTORY"], path)
   else:
-    if "BUILD_WORKING_DIRECTORY" in os.environ:
-      return os.path.join(os.environ["BUILD_WORKING_DIRECTORY"], path)
-    else:
-      return path
+    return path
 
 
 def main(unused_argv):
@@ -289,9 +284,7 @@ def main(unused_argv):
     print(
         "aquery_differ is known to cause OOM issue with large inputs. More details: b/154620006.",
         file=sys.stderr)
-    print(
-        "Max mem space of {}MB exceeded".format(max_mem_alloc_mb),
-        file=sys.stderr)
+    print(f"Max mem space of {max_mem_alloc_mb}MB exceeded", file=sys.stderr)
     sys.exit(1)
 
 

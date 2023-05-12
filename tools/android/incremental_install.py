@@ -85,10 +85,10 @@ class AdbError(Exception):
     self.stdout = stdout
     self.stderr = stderr
     details = "\n".join([
-        "adb command: %s" % args,
-        "return code: %s" % returncode,
-        "stdout: %s" % stdout,
-        "stderr: %s" % stderr,
+        f"adb command: {args}",
+        f"return code: {returncode}",
+        f"stdout: {stdout}",
+        f"stderr: {stderr}",
     ])
     super(AdbError, self).__init__(details)
 
@@ -155,12 +155,12 @@ class Adb(object):
 
     # On Windows, adb requires the SystemRoot environment variable.
     if Adb._IsHostOsWindows():
-      value = os.getenv("SYSTEMROOT")
-      if not value:
+      if value := os.getenv("SYSTEMROOT"):
+        env["SYSTEMROOT"] = value
+
+      else:
         raise EnvvarError(("The %SYSTEMROOT% environment variable must "
                            "be set or Adb won't work"))
-      env["SYSTEMROOT"] = value
-
     adb = subprocess.Popen(
         args,
         stdin=subprocess.PIPE,
@@ -210,10 +210,9 @@ class Adb(object):
 
   def GetInstallTime(self, package):
     """Get the installation time of a package."""
-    _, stdout, _, _ = self._Shell("dumpsys package %s" % package)
-    match = re.search("firstInstallTime=(.*)$", stdout, re.MULTILINE)
-    if match:
-      return match.group(1)
+    _, stdout, _, _ = self._Shell(f"dumpsys package {package}")
+    if match := re.search("firstInstallTime=(.*)$", stdout, re.MULTILINE):
+      return match[1]
     else:
       return None
 
@@ -293,17 +292,16 @@ class Adb(object):
 
   def DeleteMultiple(self, remote_files):
     """Delete the given files (or directories) on the device."""
-    files_str = " ".join(remote_files)
-    if files_str:
-      self._Shell("rm -fr %s" % files_str)
+    if files_str := " ".join(remote_files):
+      self._Shell(f"rm -fr {files_str}")
 
   def Mkdir(self, d):
     """Invokes mkdir with the specified directory on the device."""
-    self._Shell("mkdir -p %s" % d)
+    self._Shell(f"mkdir -p {d}")
 
   def StopApp(self, package):
     """Force stops the app with the given package."""
-    self._Shell("am force-stop %s" % package)
+    self._Shell(f"am force-stop {package}")
 
   def StopAppAndSaveState(self, package):
     """Stops the app with the given package, saving state for the next run."""
@@ -311,15 +309,15 @@ class Adb(object):
     # our process is in the background first. We accomplish this by bringing up
     # the app switcher.
     self._Shell("input keyevent KEYCODE_APP_SWITCH")
-    self._Shell("am kill %s" % package)
+    self._Shell(f"am kill {package}")
 
   def StartApp(self, package, start_type):
     """Starts the app with the given package."""
     if start_type == "debug":
-      self._Shell("am set-debug-app -w --persistent %s" % package)
+      self._Shell(f"am set-debug-app -w --persistent {package}")
     else:
-      self._Shell("am clear-debug-app %s" % package)
-    self._Shell("monkey -p %s -c android.intent.category.LAUNCHER 1" % package)
+      self._Shell(f"am clear-debug-app {package}")
+    self._Shell(f"monkey -p {package} -c android.intent.category.LAUNCHER 1")
 
   def _Shell(self, cmd):
     """Invoke 'adb shell'."""
@@ -384,8 +382,7 @@ def UploadDexes(adb, execroot, app_dir, temp_dir, dexmanifest, full_install):
 
   if not full_install:
     logging.info("Fetching dex manifest from device...")
-    old_manifest_contents = adb.Pull(targetpath.join(dex_dir, "manifest"))
-    if old_manifest_contents:
+    if old_manifest_contents := adb.Pull(targetpath.join(dex_dir, "manifest")):
       old_manifest = ParseManifest(old_manifest_contents)
     else:
       logging.info("Dex manifest not found on device")
@@ -403,8 +400,10 @@ def UploadDexes(adb, execroot, app_dir, temp_dir, dexmanifest, full_install):
   # Figure out which dexes to upload: those that are present in the new manifest
   # but not in the old one and those whose checksum was changed
   common_dexes = set(new_manifest).intersection(old_manifest)
-  dexes_to_upload = set(d for d in common_dexes
-                        if new_manifest[d].sha256 != old_manifest[d].sha256)
+  dexes_to_upload = {
+      d
+      for d in common_dexes if new_manifest[d].sha256 != old_manifest[d].sha256
+  }
   dexes_to_upload.update(set(new_manifest) - set(old_manifest))
 
   if not dexes_to_delete and not dexes_to_upload:
@@ -421,8 +420,10 @@ def UploadDexes(adb, execroot, app_dir, temp_dir, dexmanifest, full_install):
 
   # Sort dexes to be uploaded by the zip file they are in so that we only need
   # to open each zip only once.
-  dexzips_in_upload = set(new_manifest[d].input_file for d in dexes_to_upload
-                          if new_manifest[d].zippath != "-")
+  dexzips_in_upload = {
+      new_manifest[d].input_file
+      for d in dexes_to_upload if new_manifest[d].zippath != "-"
+  }
   for i, dexzip_name in enumerate(dexzips_in_upload):
     zip_dexes = [
         d for d in dexes_to_upload if new_manifest[d].input_file == dexzip_name]
@@ -435,12 +436,13 @@ def UploadDexes(adb, execroot, app_dir, temp_dir, dexmanifest, full_install):
                               targetpath.join(dex_dir, dex)))
 
   # Now gather all the dexes that are not within a .zip file.
-  dexes_to_upload = set(
-      d for d in dexes_to_upload if new_manifest[d].zippath == "-")
-  for dex in dexes_to_upload:
-    files_to_push.append((new_manifest[dex].input_file, targetpath.join(
-        dex_dir, dex)))
-
+  dexes_to_upload = {
+      d
+      for d in dexes_to_upload if new_manifest[d].zippath == "-"
+  }
+  files_to_push.extend(
+      (new_manifest[dex].input_file, targetpath.join(dex_dir, dex))
+      for dex in dexes_to_upload)
   num_files = len(dexes_to_delete) + len(files_to_push)
   logging.info("Updating %d dex%s...", num_files, "es" if num_files > 1 else "")
 
@@ -475,11 +477,11 @@ def Checksum(filename):
   h = hashlib.sha256()
   with open(filename, "rb") as f:
     while True:
-      data = f.read(65536)
-      if not data:
-        break
+      if data := f.read(65536):
+        h.update(data)
 
-      h.update(data)
+      else:
+        break
 
   return h.hexdigest()
 
@@ -553,8 +555,7 @@ def UploadNativeLibs(adb, native_lib_args, app_dir, full_install):
   native_libs = ConvertNativeLibs(native_lib_args)
   libs = set()
   if native_libs:
-    abi = FindAbi(adb.GetAbi(), list(native_libs.keys()))
-    if abi:
+    if abi := FindAbi(adb.GetAbi(), list(native_libs.keys())):
       libs = native_libs[abi]
 
   basename_to_path = {}
@@ -627,8 +628,7 @@ def UploadNativeLibs(adb, native_lib_args, app_dir, full_install):
     f.result()
 
   install_manifest = [
-      name + " " + checksum
-      for name, checksum in install_checksums.items()
+      f"{name} {checksum}" for name, checksum in install_checksums.items()
   ]
   adb.PushString("\n".join(install_manifest),
                  targetpath.join(app_dir, "native",
@@ -672,9 +672,9 @@ def SplitIncrementalInstall(adb, app_package, execroot, split_main_apk,
         name, checksum = manifest_line.split(" ")
         device_checksums[name] = checksum
 
-  install_checksums = {}
-  install_checksums["__MAIN__"] = Checksum(
-      hostpath.join(execroot, split_main_apk))
+  install_checksums = {
+      "__MAIN__": Checksum(hostpath.join(execroot, split_main_apk))
+  }
   for apk in split_apks:
     install_checksums[apk] = Checksum(hostpath.join(execroot, apk))
 
@@ -717,8 +717,7 @@ def SplitIncrementalInstall(adb, app_package, execroot, split_main_apk,
     adb.InstallMultiple(targetpath.join(execroot, apk), app_package)
 
   install_manifest = [
-      name + " " + checksum
-      for name, checksum in install_checksums.items()
+      f"{name} {checksum}" for name, checksum in install_checksums.items()
   ]
   adb.PushString("\n".join(install_manifest),
                  targetpath.join(app_dir, "split_manifest")).result()
@@ -786,11 +785,10 @@ def IncrementalInstall(adb_path,
             adb.GetInstallTime(app_package),
             targetpath.join(DEVICE_DIRECTORY, app_package, "install_timestamp"))
         future.result()
+      elif start_type == "warm":
+        adb.StopAppAndSaveState(app_package)
       else:
-        if start_type == "warm":
-          adb.StopAppAndSaveState(app_package)
-        else:
-          adb.StopApp(app_package)
+        adb.StopApp(app_package)
 
     if start_type in ["cold", "warm", "debug"]:
       logging.info("Starting application %s", app_package)
@@ -804,8 +802,9 @@ def IncrementalInstall(adb_path,
     sys.exit("Error: Device unauthorized. Please check the confirmation "
              "dialog on your device.")
   except MultipleDevicesError as e:
-    sys.exit("Error: " + str(e) + "\nTry specifying a device serial with "
-             "\"bazel mobile-install --adb_arg=-s --adb_arg=$ANDROID_SERIAL\"")
+    sys.exit(
+        (f"Error: {str(e)}" + "\nTry specifying a device serial with "
+         "\"bazel mobile-install --adb_arg=-s --adb_arg=$ANDROID_SERIAL\""))
   except OldSdkException as e:
     sys.exit("Error: The device does not support the API level specified in "
              "the application's manifest. Check minSdkVersion in "

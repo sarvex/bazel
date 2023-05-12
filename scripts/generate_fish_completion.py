@@ -91,9 +91,9 @@ class BazelCompletionWriter(object):
         output_file: File object opened in a writable mode.
     """
     output_file.write(_FISH_BAZEL_HEADER)
-    output_file.write('set {} {}\n'.format(
-        _FISH_BAZEL_COMMAND_LIST_VAR,
-        ' '.join(c.name for c in self._subcommands)))
+    output_file.write(
+        f"set {_FISH_BAZEL_COMMAND_LIST_VAR} {' '.join(c.name for c in self._subcommands)}\n"
+    )
     output_file.write(_FISH_BAZEL_SEEN_SUBCOMMAND_DEF)
     for opt in self._startup_options:
       opt.write_completion(output_file)
@@ -102,9 +102,10 @@ class BazelCompletionWriter(object):
 
   def _get_bazel_output(self, args):
     return subprocess.check_output(
-        (self._bazel, '--output_user_root={}'.format(self._output_user_root)) +
+        (self._bazel, f'--output_user_root={self._output_user_root}') +
         tuple(args),
-        universal_newlines=True)
+        universal_newlines=True,
+    )
 
   def _get_options_from_bazel(self, bazel_args, **kwargs):
     output = self._get_bazel_output(bazel_args)
@@ -131,10 +132,7 @@ class BazelCompletionWriter(object):
     subs = []
     output = self._get_bazel_output(('help',))
     block = re.search(r'Available commands:(.*\n\n)', output, re.DOTALL)
-    for sub in Arg.generate_from_help(
-        r'^\s*(?P<name>\S+)\s*(?P<desc>\S+.*\.)\s*$',
-        block.group(1),
-        is_subcommand=True):
+    for sub in Arg.generate_from_help(r'^\s*(?P<name>\S+)\s*(?P<desc>\S+.*\.)\s*$', block[1], is_subcommand=True):
       sub.sub_opts = self._get_options_from_bazel(('help', sub.name),
                                                   expected_subcommand=sub.name)
       sub.sub_params = self._get_params(sub.name)
@@ -170,14 +168,14 @@ class BazelCompletionWriter(object):
     param_type = self._param_types_by_subcommand[name]
     if param_type.startswith('label'):
       query = self._BAZEL_QUERY_BY_LABEL[param_type]
-      params.append("({} query -k '{}' 2>/dev/null)".format(_BAZEL, query))
+      params.append(f"({_BAZEL} query -k '{query}' 2>/dev/null)")
     elif param_type.startswith('command'):
       match = re.match(r'command\|\{(?P<commands>.*)\}', param_type)
-      params.extend(match.group('commands').split(','))
+      params.extend(match['commands'].split(','))
     elif param_type == 'info-key':
       match = re.search(r'BAZEL_INFO_KEYS="(?P<keys>[^"]*)"',
                         self._bazel_help_completion_text)
-      params.extend(match.group('keys').split())
+      params.extend(match['keys'].split())
     return params
 
   @staticmethod
@@ -228,7 +226,7 @@ class Arg(object):
         Arg objects parsed from the help text.
     """
     for match in re.finditer(line_regex, text, re.MULTILINE):
-      kwargs.update(match.groupdict())
+      kwargs |= match.groupdict()
       yield cls(**kwargs)
 
   def write_completion(self, output_file, command=_BAZEL):
@@ -250,11 +248,11 @@ class Arg(object):
       args.append('-xa')  # Exclusive subcommand argument.
     else:
       args.append('-l')  # Long option.
-    args.append('"{}"'.format(self.name))
+    args.append(f'"{self.name}"')
     name_index = len(args) - 1
 
     if self.desc:
-      args.extend(('-d', '"{}"'.format(self._escape(self.desc))))
+      args.extend(('-d', f'"{self._escape(self.desc)}"'))
 
     if not self._is_boolean:
       args.append('-r')  # Require a subsequent parameter.
@@ -263,7 +261,7 @@ class Arg(object):
     output_file.write(self._complete(args))
     if self._is_boolean:
       # Include the "false" version of a boolean option.
-      args[name_index] = '"no{}"'.format(self.name)
+      args[name_index] = f'"no{self.name}"'
       output_file.write(self._complete(args))
     if self.is_subcommand:
       for opt in self.sub_opts:
@@ -274,8 +272,7 @@ class Arg(object):
   def _write_params_completion(self, output_file, command=_BAZEL):
     args = self._get_complete_args_base(command, subcommand=self.name)
     if self.sub_params:
-      args.extend(
-          ('-fa', '"{}"'.format(self._escape(' '.join(self.sub_params)))))
+      args.extend(('-fa', f""""{self._escape(' '.join(self.sub_params))}\""""))
     output_file.write(self._complete(args))
 
   @staticmethod
@@ -289,20 +286,18 @@ class Arg(object):
     Returns:
         (:obj:`list` of :obj:`str`): List of args for `complete`.
     """
-    args = ['-c', command]
+    args = ['-c', command, '-n']
 
-    # Completion pre-condition.
-    args.append('-n')
     if subcommand:
-      args.append('"{} {}"'.format(_FISH_SEEN_SUBCOMMAND_FROM, subcommand))
+      args.append(f'"{_FISH_SEEN_SUBCOMMAND_FROM} {subcommand}"')
     else:
-      args.append('"not {}"'.format(_FISH_BAZEL_SEEN_SUBCOMMAND))
+      args.append(f'"not {_FISH_BAZEL_SEEN_SUBCOMMAND}"')
 
     return args
 
   @staticmethod
   def _complete(args):
-    return 'complete {}\n'.format(' '.join(args))
+    return f"complete {' '.join(args)}\n"
 
   @staticmethod
   def _escape(text):

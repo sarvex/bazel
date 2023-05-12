@@ -197,16 +197,14 @@ def as_completed(fs, timeout=None):
         end_time = timeout + time.time()
 
     with _AcquireFutures(fs):
-        finished = set(
-                f for f in fs
-                if f._state in [CANCELLED_AND_NOTIFIED, FINISHED])
+        finished = {
+            f for f in fs if f._state in [CANCELLED_AND_NOTIFIED, FINISHED]
+        }
         pending = set(fs) - finished
         waiter = _create_and_install_waiters(fs, _AS_COMPLETED)
 
     try:
-        for future in finished:
-            yield future
-
+        yield from finished
         while pending:
             if timeout is None:
                 wait_timeout = None
@@ -259,8 +257,9 @@ def wait(fs, timeout=None, return_when=ALL_COMPLETED):
         futures.
     """
     with _AcquireFutures(fs):
-        done = set(f for f in fs
-                   if f._state in [CANCELLED_AND_NOTIFIED, FINISHED])
+        done = {
+            f for f in fs if f._state in [CANCELLED_AND_NOTIFIED, FINISHED]
+        }
         not_done = set(fs) - done
 
         if (return_when == FIRST_COMPLETED) and done:
@@ -305,18 +304,10 @@ class Future(object):
         with self._condition:
             if self._state == FINISHED:
                 if self._exception:
-                    return '<Future at %s state=%s raised %s>' % (
-                        hex(id(self)),
-                        _STATE_TO_DESCRIPTION_MAP[self._state],
-                        self._exception.__class__.__name__)
+                    return f'<Future at {hex(id(self))} state={_STATE_TO_DESCRIPTION_MAP[self._state]} raised {self._exception.__class__.__name__}>'
                 else:
-                    return '<Future at %s state=%s returned %s>' % (
-                        hex(id(self)),
-                        _STATE_TO_DESCRIPTION_MAP[self._state],
-                        self._result.__class__.__name__)
-            return '<Future at %s state=%s>' % (
-                    hex(id(self)),
-                   _STATE_TO_DESCRIPTION_MAP[self._state])
+                    return f'<Future at {hex(id(self))} state={_STATE_TO_DESCRIPTION_MAP[self._state]} returned {self._result.__class__.__name__}>'
+            return f'<Future at {hex(id(self))} state={_STATE_TO_DESCRIPTION_MAP[self._state]}>'
 
     def cancel(self):
         """Cancel the future if possible.

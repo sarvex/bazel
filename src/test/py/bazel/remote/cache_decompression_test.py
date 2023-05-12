@@ -71,7 +71,7 @@ class CacheDecompressionTest(test_base.TestBase):
     server_port = self.GetFreeTCPPort()
     self.httpd = HTTPServer(('localhost', server_port), MemoryStorageHandler)
     self.httpd.storage = {}
-    self.url = 'http://localhost:{}'.format(server_port)
+    self.url = f'http://localhost:{server_port}'
     self.background = threading.Thread(target=self.httpd.serve_forever)
     self.background.start()
 

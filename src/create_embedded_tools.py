@@ -15,6 +15,7 @@
 # limitations under the License.
 """Creates the embedded_tools.zip that is part of the Bazel binary."""
 
+
 import contextlib
 import fnmatch
 import os
@@ -30,24 +31,27 @@ from src.create_embedded_tools_lib import is_executable
 output_paths = [
     ('*MODULE.tools', lambda x: 'MODULE.bazel'),
     ('*tools/jdk/BUILD.tools', lambda x: 'tools/jdk/BUILD'),
-    ('*tools/build_defs/repo/BUILD.repo',
-     lambda x: 'tools/build_defs/repo/BUILD'),
+    (
+        '*tools/build_defs/repo/BUILD.repo',
+        lambda x: 'tools/build_defs/repo/BUILD',
+    ),
     ('*tools/j2objc/BUILD.tools', lambda x: 'tools/j2objc/BUILD'),
     ('*tools/platforms/BUILD.tools', lambda x: 'platforms/BUILD'),
-    ('*tools/platforms/*', lambda x: 'platforms/' + os.path.basename(x)),
+    ('*tools/platforms/*', lambda x: f'platforms/{os.path.basename(x)}'),
     ('*tools/cpp/BUILD.tools', lambda x: 'tools/cpp/BUILD'),
-    ('*tools/cpp/runfiles/generated_*',
-     lambda x: 'tools/cpp/runfiles/' + os.path.basename(x)[len('generated_'):]),
+    (
+        '*tools/cpp/runfiles/generated_*',
+        lambda x: 'tools/cpp/runfiles/' + os.path.basename(x)[len('generated_'
+                                                                  ):],
+    ),
     ('*launcher.exe', lambda x: 'tools/launcher/launcher.exe'),
     ('*def_parser.exe', lambda x: 'tools/def_parser/def_parser.exe'),
     ('*zipper.exe', lambda x: 'tools/zip/zipper/zipper.exe'),
     ('*zipper', lambda x: 'tools/zip/zipper/zipper'),
     ('*xcode*xcode-locator', lambda x: 'tools/objc/xcode-locator'),
-    ('*src/tools/xcode/*', lambda x: 'tools/objc/' + os.path.basename(x)),
-    # --experimental_sibling_repository_layout=false
+    ('*src/tools/xcode/*', lambda x: f'tools/objc/{os.path.basename(x)}'),
     ('*external/openjdk_*/file/*.tar.gz', lambda x: 'jdk.tar.gz'),
     ('*external/openjdk_*/file/*.zip', lambda x: 'jdk.zip'),
-    # --experimental_sibling_repository_layout=true
     ('*openjdk_*/file/*.tar.gz', lambda x: 'jdk.tar.gz'),
     ('*openjdk_*/file/*.zip', lambda x: 'jdk.zip'),
     ('*src/minimal_jdk.tar.gz', lambda x: 'jdk.tar.gz'),
@@ -76,13 +80,13 @@ def get_input_files(argsfile):
     ValueError: When two input files map to the same output file.
   """
   with open(argsfile, 'r') as f:
-    input_files = sorted(set(x.strip() for x in f.readlines()))
+    input_files = sorted({x.strip() for x in f.readlines()})
 
     result = {}
     for input_file in input_files:
       # If we have both a BUILD and a BUILD.tools file, take the latter only.
-      if (os.path.basename(input_file) == 'BUILD' and
-          input_file + '.tools' in input_files):
+      if (os.path.basename(input_file) == 'BUILD'
+          and f'{input_file}.tools' in input_files):
         continue
 
       # It's an error to have two files map to the same output file, because the
@@ -90,8 +94,8 @@ def get_input_files(argsfile):
       output_path = get_output_path(input_file)
       if output_path in result:
         raise ValueError(
-            'Duplicate output file: Both {} and {} map to {}'.format(
-                result[output_path], input_file, output_path))
+            f'Duplicate output file: Both {result[output_path]} and {input_file} map to {output_path}'
+        )
       result[output_path] = input_file
 
   return result

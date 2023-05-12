@@ -42,12 +42,10 @@ class ProguardConfigValidator(object):
   def ValidateAndWriteOutput(self):
     with open(self._config_path) as config:
       config_string = config.read()
-      invalid_configs = self._Validate(config_string)
-      if invalid_configs:
+      if invalid_configs := self._Validate(config_string):
         raise RuntimeError(
-            'Invalid library proguard config parameters '
-            '(these parameters are either invalid or only supported in '
-            'android_binary rules): ' + str(invalid_configs))
+            f'Invalid library proguard config parameters (these parameters are either invalid or only supported in android_binary rules): {str(invalid_configs)}'
+        )
     with open(self._outconfig_path, 'w+') as outconfig:
       config_string = '# Merged from %s \n%s' % (
           self._config_path, config_string)
@@ -63,7 +61,7 @@ class ProguardConfigValidator(object):
       arg = arg.strip()
       if not arg or self._ValidateArg(arg):
         continue
-      invalid_configs.append('-' + arg.split()[0])
+      invalid_configs.append(f'-{arg.split()[0]}')
 
     return invalid_configs
 
@@ -90,8 +88,7 @@ binary through a library dependency.""")
                       help='Path to the proguard config to validate')
   parser.add_argument('--output', required=True,
                       help='Where to put the validated config')
-  flags = parser.parse_args()
-  return flags
+  return parser.parse_args()
 
 
 def main():

@@ -99,12 +99,10 @@ def Create(env=None):
     IOError: if some IO error occurs.
   """
   env_map = os.environ if env is None else env
-  manifest = env_map.get("RUNFILES_MANIFEST_FILE")
-  if manifest:
+  if manifest := env_map.get("RUNFILES_MANIFEST_FILE"):
     return CreateManifestBased(manifest)
 
-  directory = env_map.get("RUNFILES_DIR")
-  if directory:
+  if directory := env_map.get("RUNFILES_DIR"):
     return CreateDirectoryBased(directory)
 
   return None
@@ -149,9 +147,7 @@ class _Runfiles(object):
       raise ValueError("path is not normalized: \"%s\"" % path)
     if path[0] == "\\":
       raise ValueError("path is absolute without a drive letter: \"%s\"" % path)
-    if os.path.isabs(path):
-      return path
-    return self._strategy.RlocationChecked(path)
+    return path if os.path.isabs(path) else self._strategy.RlocationChecked(path)
 
   def EnvVars(self):
     """Returns environment variables for subprocesses.
@@ -203,9 +199,10 @@ class _Runfiles(object):
       raise ValueError("failed to determine caller's file path")
     caller_runfiles_path = os.path.relpath(caller_path,
                                            self._python_runfiles_root)
-    if caller_runfiles_path.startswith(".." + os.path.sep):
-      raise ValueError("{} does not lie under the runfiles root {}".format(
-          caller_path, self._python_runfiles_root))
+    if caller_runfiles_path.startswith(f"..{os.path.sep}"):
+      raise ValueError(
+          f"{caller_path} does not lie under the runfiles root {self._python_runfiles_root}"
+      )
 
     caller_runfiles_directory = caller_runfiles_path[:caller_runfiles_path
                                                      .find(os.path.sep)]
@@ -245,8 +242,7 @@ class _ManifestBased(object):
 
   def RlocationChecked(self, path):
     """Returns the runtime path of a runfile."""
-    exact_match = self._runfiles.get(path)
-    if exact_match:
+    if exact_match := self._runfiles.get(path):
       return exact_match
     # If path references a runfile that lies under a directory that itself is a
     # runfile, then only the directory is listed in the manifest. Look up all
@@ -257,9 +253,8 @@ class _ManifestBased(object):
       prefix_end = path.rfind("/", 0, prefix_end - 1)
       if prefix_end == -1:
         return None
-      prefix_match = self._runfiles.get(path[0:prefix_end])
-      if prefix_match:
-        return prefix_match + "/" + path[prefix_end + 1:]
+      if prefix_match := self._runfiles.get(path[:prefix_end]):
+        return f"{prefix_match}/{path[prefix_end + 1:]}"
 
   @staticmethod
   def _LoadRunfiles(path):
@@ -267,8 +262,7 @@ class _ManifestBased(object):
     result = {}
     with open(path, "r") as f:
       for line in f:
-        line = line.strip()
-        if line:
+        if line := line.strip():
           tokens = line.split(" ", 1)
           if len(tokens) == 1:
             result[line] = line
@@ -346,23 +340,23 @@ def _PathsFrom(argv0, runfiles_mf, runfiles_dir, is_runfiles_manifest,
   dir_valid = is_runfiles_directory(runfiles_dir)
 
   if not mf_alid and not dir_valid:
-    runfiles_mf = argv0 + ".runfiles/MANIFEST"
-    runfiles_dir = argv0 + ".runfiles"
+    runfiles_mf = f"{argv0}.runfiles/MANIFEST"
+    runfiles_dir = f"{argv0}.runfiles"
     mf_alid = is_runfiles_manifest(runfiles_mf)
     dir_valid = is_runfiles_directory(runfiles_dir)
     if not mf_alid:
-      runfiles_mf = argv0 + ".runfiles_manifest"
+      runfiles_mf = f"{argv0}.runfiles_manifest"
       mf_alid = is_runfiles_manifest(runfiles_mf)
-
-  if not mf_alid and not dir_valid:
-    return ("", "")
 
   if not mf_alid:
-    runfiles_mf = runfiles_dir + "/MANIFEST"
+    if not dir_valid:
+      return ("", "")
+
+    runfiles_mf = f"{runfiles_dir}/MANIFEST"
     mf_alid = is_runfiles_manifest(runfiles_mf)
-    if not mf_alid:
-      runfiles_mf = runfiles_dir + "_manifest"
-      mf_alid = is_runfiles_manifest(runfiles_mf)
+  if not mf_alid:
+    runfiles_mf = f"{runfiles_dir}_manifest"
+    mf_alid = is_runfiles_manifest(runfiles_mf)
 
   if not dir_valid:
     runfiles_dir = runfiles_mf[:-9]  # "_manifest" or "/MANIFEST"

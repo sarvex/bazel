@@ -98,26 +98,22 @@ class RunfilesSandboxedTest(test_base.TestBase):
 
     if len(stdout_lines) != 8:
       self._FailWithContents("wrong number of output lines", stdout_lines)
-    i = 0
-    for lang in [("py", "Python", "bar.py"), ("java", "Java", "Bar.java"),
-                 ("sh", "Bash", "bar.sh"), ("cc", "C++", "bar.cc")]:
+    for i, lang in enumerate([("py", "Python", "bar.py"), ("java", "Java", "Bar.java"),
+                 ("sh", "Bash", "bar.sh"), ("cc", "C++", "bar.cc")]):
       # Check that the bar-<language> binary printed the expected output.
-      if stdout_lines[i * 2] != "Hello %s Bar!" % lang[1]:
-        self._FailWithContents("wrong line for " + lang[1], stdout_lines)
+      if stdout_lines[i * 2] != f"Hello {lang[1]} Bar!":
+        self._FailWithContents(f"wrong line for {lang[1]}", stdout_lines)
       if not stdout_lines[i * 2 + 1].startswith("rloc="):
-        self._FailWithContents("wrong line for " + lang[1], stdout_lines)
-      if not stdout_lines[i * 2 + 1].endswith(
-          "foo_ws/bar/bar-%s-data.txt" % lang[0]):
-        self._FailWithContents("wrong line for " + lang[1], stdout_lines)
+        self._FailWithContents(f"wrong line for {lang[1]}", stdout_lines)
+      if not stdout_lines[i * 2 +
+                          1].endswith(f"foo_ws/bar/bar-{lang[0]}-data.txt"):
+        self._FailWithContents(f"wrong line for {lang[1]}", stdout_lines)
 
       # Assert the contents of bar-<language>-data.txt. This indicates that
       # the runfiles library in the bar-<language> binary found the correct
       # runfile and returned a valid path.
-      if data_files[i] != "data for " + lang[2]:
-        self._FailWithContents("runfile does not exist for " + lang[1],
-                               stdout_lines)
-
-      i += 1
+      if data_files[i] != f"data for {lang[2]}":
+        self._FailWithContents(f"runfile does not exist for {lang[1]}", stdout_lines)
 
 
 if __name__ == "__main__":

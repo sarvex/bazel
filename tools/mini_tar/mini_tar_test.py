@@ -40,23 +40,19 @@ class TarFileWriterTest(unittest.TestCase):
     with tarfile.open(tar, "r:") as f:
       i = 0
       for current in f:
-        error_msg = "Extraneous file at end of archive %s: %s" % (tar,
-                                                                  current.name)
+        error_msg = f"Extraneous file at end of archive {tar}: {current.name}"
         self.assertLess(i, len(content), error_msg)
         for k, v in content[i].items():
-          if k == "data":
-            value = f.extractfile(current).read()
-          else:
-            value = getattr(current, k)
+          value = f.extractfile(current).read() if k == "data" else getattr(current, k)
           error_msg = " ".join([
-              "Value `%s` for key `%s` of file" % (value, k),
-              "%s in archive %s does" % (current.name, tar),
-              "not match expected value `%s`" % v
+              f"Value `{value}` for key `{k}` of file",
+              f"{current.name} in archive {tar} does",
+              f"not match expected value `{v}`",
           ])
           self.assertEqual(value, v, error_msg)
         i += 1
       if i < len(content):
-        self.fail("Missing file %s in archive %s" % (content[i], tar))
+        self.fail(f"Missing file {content[i]} in archive {tar}")
 
   def setUp(self):
     super(TarFileWriterTest, self).setUp()

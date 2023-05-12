@@ -54,14 +54,14 @@ def ExtractResources(aar, output_res_dir):
       ExtractOneFile(aar, name, output_res_dir_abs)
       aar_contains_no_resources = False
   if aar_contains_no_resources:
-    empty_xml_filename = output_res_dir + "/res/values/empty.xml"
+    empty_xml_filename = f"{output_res_dir}/res/values/empty.xml"
     WriteFileWithJunctions(empty_xml_filename, b"<resources/>")
 
 
 def ExtractAssets(aar, output_assets_dir):
   """Extracts assets from an `aar` file to the `output_assets_dir` directory."""
-  aar_contains_no_assets = True
   output_assets_dir_abs = os.path.abspath(output_assets_dir)
+  aar_contains_no_assets = True
   for name in aar.namelist():
     if name.startswith("assets/") and not name.endswith("/"):
       ExtractOneFile(aar, name, output_assets_dir_abs)
@@ -71,8 +71,7 @@ def ExtractAssets(aar, output_assets_dir):
     # thinks that it is a swap file. We need to create at least one file so that
     # Bazel does not complain that the output tree artifact was not created.
     empty_asset_filename = (
-        output_assets_dir +
-        "/assets/empty_asset_generated_by_bazel~")
+        f"{output_assets_dir}/assets/empty_asset_generated_by_bazel~")
     WriteFileWithJunctions(empty_asset_filename, b"")
 
 

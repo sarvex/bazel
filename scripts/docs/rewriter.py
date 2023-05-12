@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module for fixing links in Bazel release docs."""
+
 import os
 import re
 
@@ -22,33 +23,30 @@ _BASE_URL = "https://bazel.build"
 # We need to use regular expressions here since HTML can be embedded in
 # Markdown and Yaml, thus breaking XML parsers. Moreover, our use case is
 # simple, so regex should work (tm).
-_HTML_LINK_PATTERN = re.compile(
-    r"((href|src)\s*=\s*[\"']({})?)/".format(_BASE_URL))
+_HTML_LINK_PATTERN = re.compile(f"""((href|src)\s*=\s*[\"']({_BASE_URL})?)/""")
 
 
 def _fix_html_links(content, version):
-  return _HTML_LINK_PATTERN.sub(r"\1/versions/{}/".format(version), content)
+  return _HTML_LINK_PATTERN.sub(f"\1/versions/{version}/", content)
 
 
 def _fix_html_metadata(content, version):
   return content.replace("value=\"/_book.yaml\"",
-                         "value=\"/versions/{}/_book.yaml\"".format(version))
+                         f'value=\"/versions/{version}/_book.yaml\"')
 
 
-_MD_LINK_OR_IMAGE_PATTERN = re.compile(
-    r"(\!?\[.*?\]\(({})?)(/.*?)\)".format(_BASE_URL))
+_MD_LINK_OR_IMAGE_PATTERN = re.compile(f"(\!?\[.*?\]\(({_BASE_URL})?)(/.*?)\)")
 
 
 def _fix_md_links_and_images(content, version):
-  return _MD_LINK_OR_IMAGE_PATTERN.sub(r"\1/versions/{}\3)".format(version),
-                                       content)
+  return _MD_LINK_OR_IMAGE_PATTERN.sub(f"\1/versions/{version}\3)", content)
 
 
 _MD_METADATA_PATTERN = re.compile(r"^(Book: )(/.+)$", re.MULTILINE)
 
 
 def _fix_md_metadata(content, version):
-  return _MD_METADATA_PATTERN.sub(r"\1/versions/{}\2".format(version), content)
+  return _MD_METADATA_PATTERN.sub(f"\1/versions/{version}\2", content)
 
 
 _YAML_PATH_PATTERN = re.compile(r"((book_|image_)?path: ['\"]?)(/.*?)(['\"]?)$",
@@ -112,8 +110,7 @@ def rewrite_links(path, content, version):
   """
   fixes = _get_fixes(path)
   if not fixes:
-    raise ValueError(
-        "Cannot rewrite {} due to unsupported file type.".format(path))
+    raise ValueError(f"Cannot rewrite {path} due to unsupported file type.")
 
   new_content = content
   for f in fixes:

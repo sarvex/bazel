@@ -25,20 +25,21 @@ class WindowsRemoteTest(test_base.TestBase):
 
   def _RunRemoteBazel(self, args, env_remove=None, env_add=None):
     return self.RunBazel(
-        args + [
+        (args + [
             '--spawn_strategy=remote',
             '--strategy=Javac=remote',
             '--strategy=Closure=remote',
             '--genrule_strategy=remote',
             '--define=EXECUTOR=remote',
-            '--remote_executor=grpc://localhost:' + str(self._worker_port),
-            '--remote_cache=grpc://localhost:' + str(self._worker_port),
+            f'--remote_executor=grpc://localhost:{str(self._worker_port)}',
+            f'--remote_cache=grpc://localhost:{str(self._worker_port)}',
             '--remote_timeout=3600',
             '--auth_enabled=false',
             '--remote_accept_cached=false',
-        ],
+        ]),
         env_remove=env_remove,
-        env_add=env_add)
+        env_add=env_add,
+    )
 
   def setUp(self):
     test_base.TestBase.setUp(self)

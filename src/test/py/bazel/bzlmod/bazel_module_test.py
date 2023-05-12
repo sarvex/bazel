@@ -43,15 +43,10 @@ class BazelModuleTest(test_base.TestBase):
     self.ScratchFile(
         '.bazelrc',
         [
-            # In ipv6 only network, this has to be enabled.
-            # 'startup --host_jvm_args=-Djava.net.preferIPv6Addresses=true',
             'common --enable_bzlmod',
-            'common --registry=' + self.main_registry.getURL(),
-            # We need to have BCR here to make sure built-in modules like
-            # bazel_tools can work.
+            f'common --registry={self.main_registry.getURL()}',
             'common --registry=https://bcr.bazel.build',
             'common --verbose_failures',
-            # Set an explicit Java language version
             'common --java_language_version=8',
             'common --tool_java_language_version=8',
             'common --lockfile_mode=update',
@@ -262,10 +257,8 @@ class BazelModuleTest(test_base.TestBase):
         "ERROR: <builtin>: //pkg:_main~module_ext~foo: no such attribute 'invalid_attr' in 'repo_rule' rule",
         stderr)
     self.assertTrue(
-        any([
-            '/pkg/extension.bzl", line 3, column 14, in _module_ext_impl'
-            in line for line in stderr
-        ]))
+        any('/pkg/extension.bzl", line 3, column 14, in _module_ext_impl' in line
+            for line in stderr))
 
   def testDownload(self):
     data_path = self.ScratchFile('data.txt', ['some data'])
@@ -276,43 +269,52 @@ class BazelModuleTest(test_base.TestBase):
     ])
     self.ScratchFile('BUILD')
     self.ScratchFile('WORKSPACE')
-    self.ScratchFile('ext.bzl', [
-        'def _no_op_impl(ctx):',
-        '  ctx.file("WORKSPACE")',
-        '  ctx.file("BUILD", "filegroup(name=\\"no_op\\")")',
-        'no_op = repository_rule(_no_op_impl)',
-        'def _data_ext_impl(ctx):',
-        '  if not ctx.download(url="%s", output="data.txt").success:' %
-        data_url,
-        '    fail("download failed")',
-        '  if ctx.read("data.txt").strip() != "some data":',
-        '    fail("unexpected downloaded content: %s" % ctx.read("data.txt").strip())',
-        '  no_op(name="no_op")',
-        'data_ext = module_extension(_data_ext_impl)',
-    ])
+    self.ScratchFile(
+        'ext.bzl',
+        [
+            'def _no_op_impl(ctx):',
+            '  ctx.file("WORKSPACE")',
+            '  ctx.file("BUILD", "filegroup(name=\\"no_op\\")")',
+            'no_op = repository_rule(_no_op_impl)',
+            'def _data_ext_impl(ctx):',
+            f'  if not ctx.download(url="{data_url}", output="data.txt").success:',
+            '    fail("download failed")',
+            '  if ctx.read("data.txt").strip() != "some data":',
+            '    fail("unexpected downloaded content: %s" % ctx.read("data.txt").strip())',
+            '  no_op(name="no_op")',
+            'data_ext = module_extension(_data_ext_impl)',
+        ],
+    )
     self.RunBazel(['build', '@no_op//:no_op'], allow_failure=False)
 
   def setUpProjectWithLocalRegistryModule(self, dep_name, dep_version):
     self.main_registry.generateCcSource(dep_name, dep_version)
     self.main_registry.createLocalPathModule(dep_name, dep_version,
-                                             dep_name + '/' + dep_version)
+                                             f'{dep_name}/{dep_version}')
 
-    self.ScratchFile('main.cc', [
-        '#include "%s.h"' % dep_name,
-        'int main() {',
-        '    hello_%s("main function");' % dep_name,
-        '}',
-    ])
-    self.ScratchFile('MODULE.bazel', [
-        'bazel_dep(name = "%s", version = "%s")' % (dep_name, dep_version),
-    ])
-    self.ScratchFile('BUILD', [
-        'cc_binary(',
-        '  name = "main",',
-        '  srcs = ["main.cc"],',
-        '  deps = ["@%s//:lib_%s"],' % (dep_name, dep_name),
-        ')',
-    ])
+    self.ScratchFile(
+        'main.cc',
+        [
+            f'#include "{dep_name}.h"',
+            'int main() {',
+            f'    hello_{dep_name}("main function");',
+            '}',
+        ],
+    )
+    self.ScratchFile(
+        'MODULE.bazel',
+        [f'bazel_dep(name = "{dep_name}", version = "{dep_version}")'],
+    )
+    self.ScratchFile(
+        'BUILD',
+        [
+            'cc_binary(',
+            '  name = "main",',
+            '  srcs = ["main.cc"],',
+            f'  deps = ["@{dep_name}//:lib_{dep_name}"],',
+            ')',
+        ],
+    )
     self.ScratchFile('WORKSPACE', [])
 
   def testLocalRepoInSourceJsonAbsoluteBasePath(self):

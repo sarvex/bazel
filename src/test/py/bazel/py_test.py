@@ -71,11 +71,13 @@ class TestInitPyFiles(test_base.TestBase):
   def createSimpleFiles(self, create_init=True):
     self.CreateWorkspaceWithDefaultRepos('WORKSPACE')
 
-    self.ScratchFile('src/a/BUILD', [
-        'py_binary(name="a", srcs=["a.py"], deps=[":b"], legacy_create_init=%s)'
-        % create_init,
-        'py_library(name="b", srcs=["b.py"])',
-    ])
+    self.ScratchFile(
+        'src/a/BUILD',
+        [
+            f'py_binary(name="a", srcs=["a.py"], deps=[":b"], legacy_create_init={create_init})',
+            'py_library(name="b", srcs=["b.py"])',
+        ],
+    )
 
     self.ScratchFile('src/a/a.py', [
         'from src.a import b',
@@ -139,18 +141,18 @@ class PyRemoteTest(test_base.TestBase):
   _worker_port = None
 
   def _RunRemoteBazel(self, args):
-    return self.RunBazel(args + [
+    return self.RunBazel((args + [
         '--spawn_strategy=remote',
         '--strategy=Javac=remote',
         '--strategy=Closure=remote',
         '--genrule_strategy=remote',
         '--define=EXECUTOR=remote',
-        '--remote_executor=grpc://localhost:' + str(self._worker_port),
-        '--remote_cache=grpc://localhost:' + str(self._worker_port),
+        f'--remote_executor=grpc://localhost:{str(self._worker_port)}',
+        f'--remote_cache=grpc://localhost:{str(self._worker_port)}',
         '--remote_timeout=3600',
         '--auth_enabled=false',
         '--remote_accept_cached=false',
-    ])
+    ]))
 
   def setUp(self):
     test_base.TestBase.setUp(self)

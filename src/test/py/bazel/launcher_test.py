@@ -29,18 +29,18 @@ class LauncherTest(test_base.TestBase):
   def _buildJavaTargets(self, bazel_bin, binary_suffix):
     exit_code, _, stderr = self.RunBazel(['build', '//foo'])
     self.AssertExitCode(exit_code, 0, stderr)
-    main_binary = os.path.join(bazel_bin, 'foo/foo%s' % binary_suffix)
+    main_binary = os.path.join(bazel_bin, f'foo/foo{binary_suffix}')
     self.assertTrue(os.path.isfile(main_binary))
     self.assertTrue(
-        os.path.isdir(
-            os.path.join(bazel_bin, 'foo/foo%s.runfiles' % binary_suffix)))
+        os.path.isdir(os.path.join(bazel_bin,
+                                   f'foo/foo{binary_suffix}.runfiles')))
 
     if self.IsWindows():
       self.assertTrue(os.path.isfile(main_binary))
       self.AssertRunfilesManifestContains(
-          os.path.join(bazel_bin,
-                       'foo/foo%s.runfiles/MANIFEST' % binary_suffix),
-          '__main__/bar/bar.txt')
+          os.path.join(bazel_bin, f'foo/foo{binary_suffix}.runfiles/MANIFEST'),
+          '__main__/bar/bar.txt',
+      )
     else:
       self.assertTrue(
           os.path.islink(
@@ -65,12 +65,12 @@ class LauncherTest(test_base.TestBase):
     exit_code, _, stderr = self.RunBazel(['build', '//foo:bin1.sh'])
     self.AssertExitCode(exit_code, 0, stderr)
 
-    bin1 = os.path.join(bazel_bin, 'foo', 'bin1.sh%s' % bin1_suffix)
+    bin1 = os.path.join(bazel_bin, 'foo', f'bin1.sh{bin1_suffix}')
 
     self.assertTrue(os.path.exists(bin1))
     self.assertTrue(
         os.path.isdir(
-            os.path.join(bazel_bin, 'foo/bin1.sh%s.runfiles' % bin1_suffix)))
+            os.path.join(bazel_bin, f'foo/bin1.sh{bin1_suffix}.runfiles')))
 
     exit_code, _, stderr = self.RunBazel(['build', '//foo:bin2.cmd'])
     self.AssertExitCode(exit_code, 0, stderr)
@@ -101,9 +101,9 @@ class LauncherTest(test_base.TestBase):
 
     if self.IsWindows():
       self.AssertRunfilesManifestContains(
-          os.path.join(bazel_bin,
-                       'foo/bin1.sh%s.runfiles/MANIFEST' % bin1_suffix),
-          '__main__/bar/bar.txt')
+          os.path.join(bazel_bin, f'foo/bin1.sh{bin1_suffix}.runfiles/MANIFEST'),
+          '__main__/bar/bar.txt',
+      )
       self.AssertRunfilesManifestContains(
           os.path.join(bazel_bin, 'foo/bin2.cmd.runfiles/MANIFEST'),
           '__main__/bar/bar.txt')
@@ -150,18 +150,18 @@ class LauncherTest(test_base.TestBase):
     self.AssertExitCode(exit_code, 0, stderr)
 
     # Verify that generated files exist.
-    foo_bin = os.path.join(bazel_bin, 'foo', 'foo%s' % binary_suffix)
+    foo_bin = os.path.join(bazel_bin, 'foo', f'foo{binary_suffix}')
     self.assertTrue(os.path.isfile(foo_bin))
     self.assertTrue(
-        os.path.isdir(
-            os.path.join(bazel_bin, 'foo/foo%s.runfiles' % binary_suffix)))
+        os.path.isdir(os.path.join(bazel_bin,
+                                   f'foo/foo{binary_suffix}.runfiles')))
 
     # Verify contents of runfiles (manifest).
     if self.IsWindows():
       self.AssertRunfilesManifestContains(
-          os.path.join(bazel_bin,
-                       'foo/foo%s.runfiles/MANIFEST' % binary_suffix),
-          '__main__/bar/bar.txt')
+          os.path.join(bazel_bin, f'foo/foo{binary_suffix}.runfiles/MANIFEST'),
+          '__main__/bar/bar.txt',
+      )
     else:
       self.assertTrue(
           os.path.islink(
@@ -191,17 +191,16 @@ class LauncherTest(test_base.TestBase):
     self.AssertExitCode(exit_code, 0, stderr)
     bazel_bin = stdout[0]
 
-    exit_code, _, stderr = self.RunBazel(
-        ['build', '//%s:%s' % (package, target_name)])
+    exit_code, _, stderr = self.RunBazel(['build', f'//{package}:{target_name}'])
     self.AssertExitCode(exit_code, 0, stderr)
 
     bin_suffix = '.exe' if self.IsWindows() else ''
-    bin1 = os.path.join(bazel_bin, package, '%s%s' % (target_name, bin_suffix))
+    bin1 = os.path.join(bazel_bin, package, f'{target_name}{bin_suffix}')
     self.assertTrue(os.path.exists(bin1))
     self.assertTrue(
         os.path.isdir(
-            os.path.join(bazel_bin, '%s/%s%s.runfiles' % (package, target_name,
-                                                          bin_suffix))))
+            os.path.join(bazel_bin,
+                         f'{package}/{target_name}{bin_suffix}.runfiles')))
 
     arguments = ['a', 'a b', '"b"', 'C:\\a\\b\\', '"C:\\a b\\c\\"']
     exit_code, stdout, stderr = self.RunProgram([bin1] + arguments)
@@ -422,7 +421,7 @@ class LauncherTest(test_base.TestBase):
 
     # Try to run the built py_binary.
     binary_suffix = '.exe' if self.IsWindows() else ''
-    foo_bin = os.path.join(bazel_bin, 'foo', 'bin%s' % binary_suffix)
+    foo_bin = os.path.join(bazel_bin, 'foo', f'bin{binary_suffix}')
     args = [r'C:\Invalid.exe' if self.IsWindows() else '/invalid']
     exit_code, stdout, stderr = self.RunProgram(args, executable=foo_bin)
     self.AssertExitCode(exit_code, 0, stderr)
@@ -553,7 +552,7 @@ class LauncherTest(test_base.TestBase):
     exit_code, stdout, stderr = self.RunProgram(
         [binary, print_cmd], env_add={'TEST_TMPDIR': my_tmp_dir})
     self.AssertExitCode(exit_code, 0, stderr)
-    self.assertIn('-Djava.io.tmpdir=%s' % my_tmp_dir, stdout)
+    self.assertIn(f'-Djava.io.tmpdir={my_tmp_dir}', stdout)
 
     exit_code, stdout, stderr = self.RunProgram(
         [binary, '--classpath_limit=0', print_cmd])
@@ -681,9 +680,7 @@ class LauncherTest(test_base.TestBase):
       self.CopyFile(
           os.path.join(bazel_bin, 'bin', f), os.path.join(long_dir_path, f))
 
-    long_binary_path = os.path.abspath(
-        long_dir_path + '/not_short_bin_java.exe'
-    )
+    long_binary_path = os.path.abspath(f'{long_dir_path}/not_short_bin_java.exe')
     # subprocess doesn't support long path without shell=True
     exit_code, stdout, stderr = self.RunProgram([long_binary_path], shell=True)
     self.AssertExitCode(exit_code, 0, stderr)
@@ -695,7 +692,7 @@ class LauncherTest(test_base.TestBase):
     self.AssertExitCode(exit_code, 0, stderr)
     self.assertEqual('helloworld', ''.join(stdout))
 
-    long_binary_path = os.path.abspath(long_dir_path + '/not_short_bin_sh.exe')
+    long_binary_path = os.path.abspath(f'{long_dir_path}/not_short_bin_sh.exe')
     # subprocess doesn't support long path without shell=True
     exit_code, stdout, stderr = self.RunProgram([long_binary_path], shell=True)
     self.AssertExitCode(exit_code, 0, stderr)
@@ -707,7 +704,7 @@ class LauncherTest(test_base.TestBase):
     self.AssertExitCode(exit_code, 0, stderr)
     self.assertEqual('helloworld', ''.join(stdout))
 
-    long_binary_path = os.path.abspath(long_dir_path + '/not_short_bin_py.exe')
+    long_binary_path = os.path.abspath(f'{long_dir_path}/not_short_bin_py.exe')
     # subprocess doesn't support long path without shell=True
     exit_code, stdout, stderr = self.RunProgram([long_binary_path], shell=True)
     self.AssertExitCode(exit_code, 0, stderr)
@@ -798,7 +795,7 @@ class LauncherTest(test_base.TestBase):
         tokens = l.strip().split(' ', 1)
         if len(tokens) == 2 and tokens[0] == entry:
           return
-    self.fail('Runfiles manifest "%s" did not contain "%s"' % (manifest, entry))
+    self.fail(f'Runfiles manifest "{manifest}" did not contain "{entry}"')
 
 
 if __name__ == '__main__':

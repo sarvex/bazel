@@ -50,7 +50,7 @@ def _register_bounds_validator_if_needed(parser, name, flag_values):
 
     def checker(value):
       if value is not None and parser.is_outside_bounds(value):
-        message = '%s is not %s' % (value, parser.syntactic_help)
+        message = f'{value} is not {parser.syntactic_help}'
         raise _exceptions.ValidationError(message)
       return True
 
@@ -179,8 +179,7 @@ def declare_key_flag(flag_name, flag_values=_flagvalues.FLAGS):
   try:
     _internal_declare_key_flags([flag_name], flag_values=flag_values)
   except KeyError:
-    raise ValueError(
-        'Key flag --%s needs to be defined in Python' % flag_name)
+    raise ValueError(f'Key flag --{flag_name} needs to be defined in Python')
 
 
 def adopt_module_key_flags(module, flag_values=_flagvalues.FLAGS):
@@ -552,7 +551,7 @@ def DEFINE_alias(name, original_name, flag_values=_flagvalues.FLAGS,  # pylint: 
     def value(self, value):
       flag.value = value
 
-  help_msg = 'Alias for --%s.' % flag.name
+  help_msg = f'Alias for --{flag.name}.'
   # If alias_name has been used, flags.DuplicatedFlag will be raised.
   DEFINE_flag(_FlagAlias(_Parser(), flag.serializer, name, flag.default,
                          help_msg, boolean=flag.boolean),

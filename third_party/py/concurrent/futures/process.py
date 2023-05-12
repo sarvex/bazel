@@ -230,18 +230,17 @@ def _queue_manangement_worker(executor_reference,
             #   - The interpreter is shutting down OR
             #   - The executor that owns this worker has been collected OR
             #   - The executor that owns this worker has been shutdown.
-            if _shutdown or executor is None or executor._shutdown_thread:
-                # Since no new work items can be added, it is safe to shutdown
-                # this thread if there are no pending work items.
-                if not pending_work_items:
-                    shutdown_process_event.set()
+            if (
+                _shutdown or executor is None or executor._shutdown_thread
+            ) and not pending_work_items:
+                shutdown_process_event.set()
 
-                    # If .join() is not called on the created processes then
-                    # some multiprocessing.Queue methods may deadlock on Mac OS
-                    # X.
-                    for p in processes:
-                        p.join()
-                    return
+                # If .join() is not called on the created processes then
+                # some multiprocessing.Queue methods may deadlock on Mac OS
+                # X.
+                for p in processes:
+                    p.join()
+                return
             del executor
         else:
             work_item = pending_work_items[result_item.work_id]
@@ -330,9 +329,8 @@ class ProcessPoolExecutor(_base.Executor):
     def shutdown(self, wait=True):
         with self._shutdown_lock:
             self._shutdown_thread = True
-        if wait:
-            if self._queue_management_thread:
-                self._queue_management_thread.join()
+        if wait and self._queue_management_thread:
+            self._queue_management_thread.join()
         # To reduce the risk of openning too many files, remove references to
         # objects that use file descriptors.
         self._queue_management_thread = None

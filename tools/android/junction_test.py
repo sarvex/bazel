@@ -75,7 +75,7 @@ class JunctionTest(test_base.TestBase):
     target = self.ScratchDir("junc target")
     # Make the `target` path a non-normalized Windows path with a space in it.
     # TempJunction should still work.
-    target = os.path.dirname(target) + "/junc target"
+    target = f"{os.path.dirname(target)}/junc target"
     with junction.TempJunction(target, testonly_mkdtemp=tempdir) as j:
       self.assertTrue(os.path.exists(j))
       if os.name != "nt":

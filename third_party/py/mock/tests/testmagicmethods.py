@@ -68,7 +68,7 @@ class TestMockingMagicMethods(unittest2.TestCase):
 
     def test_repr(self):
         mock = Mock()
-        self.assertEqual(repr(mock), "<Mock id='%s'>" % id(mock))
+        self.assertEqual(repr(mock), f"<Mock id='{id(mock)}'>")
         mock.__repr__ = lambda s: 'foo'
         self.assertEqual(repr(mock), 'foo')
 

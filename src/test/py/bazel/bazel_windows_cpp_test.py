@@ -616,7 +616,7 @@ class BazelWindowsCppTest(test_base.TestBase):
     bazel_bin = self.getBazelInfo('bazel-bin')
     exit_code, _, stderr = self.RunBazel(['build', '//:lib.dll', '-s'])
     self.AssertExitCode(exit_code, 0, stderr)
-    def_file = bazel_bin + '/lib_B.gen.def'
+    def_file = f'{bazel_bin}/lib_B.gen.def'
     self.assertTrue(os.path.exists(def_file))
     # hello_A should not be exported
     self.AssertFileContentNotContains(def_file, 'hello_A')
@@ -665,7 +665,7 @@ class BazelWindowsCppTest(test_base.TestBase):
     # Test specifying DEF file in cc_binary
     exit_code, _, stderr = self.RunBazel(['build', '//:lib_dy.dll', '-s'])
     self.AssertExitCode(exit_code, 0, stderr)
-    filepath = bazel_bin + '/lib_dy.dll-2.params'
+    filepath = f'{bazel_bin}/lib_dy.dll-2.params'
     with open(filepath, 'r', encoding='latin-1') as param_file:
       self.assertIn('/DEF:my_lib.def', param_file.read())
 
@@ -815,12 +815,13 @@ class BazelWindowsCppTest(test_base.TestBase):
 
   def createSimpleCppWorkspace(self, name):
     work_dir = self.ScratchDir(name)
-    self.ScratchFile(name + '/WORKSPACE', ['workspace(name = "%s")' % name])
+    self.ScratchFile(f'{name}/WORKSPACE', [f'workspace(name = "{name}")'])
     self.ScratchFile(
-        name + '/BUILD',
-        ['cc_library(name = "lib", srcs = ["lib.cc"], hdrs = ["lib.h"])'])
-    self.ScratchFile(name + '/lib.h', ['void hello();'])
-    self.ScratchFile(name + '/lib.cc', ['#include "lib.h"', 'void hello() {}'])
+        f'{name}/BUILD',
+        ['cc_library(name = "lib", srcs = ["lib.cc"], hdrs = ["lib.h"])'],
+    )
+    self.ScratchFile(f'{name}/lib.h', ['void hello();'])
+    self.ScratchFile(f'{name}/lib.cc', ['#include "lib.h"', 'void hello() {}'])
     return work_dir
 
   # Regression test for https://github.com/bazelbuild/bazel/issues/9172
@@ -829,10 +830,10 @@ class BazelWindowsCppTest(test_base.TestBase):
     dir_a = self.createSimpleCppWorkspace('A')
     dir_b = self.createSimpleCppWorkspace('B')
     exit_code, _, stderr = self.RunBazel(
-        ['build', '--disk_cache=' + cache_dir, ':lib'], cwd=dir_a)
+        ['build', f'--disk_cache={cache_dir}', ':lib'], cwd=dir_a)
     self.AssertExitCode(exit_code, 0, stderr)
     exit_code, _, stderr = self.RunBazel(
-        ['build', '--disk_cache=' + cache_dir, ':lib'], cwd=dir_b)
+        ['build', f'--disk_cache={cache_dir}', ':lib'], cwd=dir_b)
     self.AssertExitCode(exit_code, 0, stderr)
 
   # Regression test for https://github.com/bazelbuild/bazel/issues/9321

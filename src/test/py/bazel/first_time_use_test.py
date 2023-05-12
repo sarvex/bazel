@@ -39,9 +39,9 @@ class FirstTimeUseTest(test_base.TestBase):
         self._FailWithOutput(stdout + stderr)
       if not found_hello and 'hello python' in line:
         found_hello = True
-      elif not found_arg_a and 'arg[1]=(a)':
+      elif not found_arg_a:
         found_arg_a = True
-      elif not found_arg_bc and 'arg[2]=(b c)':
+      elif not found_arg_bc:
         found_arg_bc = True
         break
     if not found_hello or not found_arg_a or not found_arg_bc:
@@ -73,7 +73,6 @@ class FirstTimeUseTest(test_base.TestBase):
           '//foo:x',
       ])
 
-      self._AssertBazelRunBinaryOutput(exit_code, stdout, stderr)
     else:
       exit_code, stdout, stderr = self.RunBazel([
           'run',
@@ -83,17 +82,15 @@ class FirstTimeUseTest(test_base.TestBase):
           '//foo:x',
       ])
       self.AssertNotExitCode(exit_code, 0, stderr)
-      found_error = False
-      for line in stdout + stderr:
-        if 'ERROR' in line and 'needs a shell' in line:
-          found_error = True
-          break
+      found_error = any('ERROR' in line and 'needs a shell' in line
+                        for line in stdout + stderr)
       if not found_error:
         self._FailWithOutput(stdout + stderr)
 
       # Run succeeds because there is a shell.
       exit_code, stdout, stderr = self.RunBazel(['run', '//foo:x'])
-      self._AssertBazelRunBinaryOutput(exit_code, stdout, stderr)
+
+    self._AssertBazelRunBinaryOutput(exit_code, stdout, stderr)
 
 
 if __name__ == '__main__':

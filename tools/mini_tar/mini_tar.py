@@ -59,7 +59,7 @@ class TarFileWriter(object):
       self.default_mtime = int(default_mtime)
     self.tar = tarfile.open(name=name, mode=mode)
     self.members = set()
-    self.directories = set(['.'])
+    self.directories = {'.'}
 
   def __enter__(self):
     return self
@@ -73,10 +73,8 @@ class TarFileWriter(object):
 
   def _addfile(self, info, fileobj=None):
     """Add a file in the tar file if there is no conflict."""
-    if info.type == tarfile.DIRTYPE:
-      # Enforce the ending / for directories so we correctly deduplicate.
-      if not info.name.endswith('/'):
-        info.name += '/'
+    if info.type == tarfile.DIRTYPE and not info.name.endswith('/'):
+      info.name += '/'
     if info.name not in self.members:
       self.tar.addfile(info, fileobj)
       self.members.add(info.name)
@@ -103,7 +101,7 @@ class TarFileWriter(object):
       if len(components) > 1:
         add_dirs(components[0])
       self.directories.add(path)
-      tarinfo = tarfile.TarInfo(path + '/')
+      tarinfo = tarfile.TarInfo(f'{path}/')
       tarinfo.mtime = self.default_mtime
       tarinfo.uid = self.default_uid
       tarinfo.gid = self.default_gid
@@ -134,8 +132,9 @@ class TarFileWriter(object):
       filelist = os.listdir(input_path)
       filelist.sort()
       for f in filelist:
-        self.add_tree(
-            input_path=input_path + '/' + f, dest_path=dest_path + f, mode=mode)
+        self.add_tree(input_path=f'{input_path}/{f}',
+                      dest_path=dest_path + f,
+                      mode=mode)
     else:
       self.add_file_and_parents(
           dest_path, tarfile.REGTYPE, file_content=input_path, mode=mode)
@@ -158,10 +157,10 @@ class TarFileWriter(object):
         `content` to specifies a content for the file.
       mode: unix permission mode of the file, default 0644 (0755).
     """
-    if self.root_directory and (
-        not (name == self.root_directory or name.startswith('/') or
-             name.startswith(self.root_directory + '/'))):
-      name = self.root_directory + '/' + name
+    if (self.root_directory and name != self.root_directory
+        and not name.startswith('/')
+        and not name.startswith(f'{self.root_directory}/')):
+      name = f'{self.root_directory}/{name}'
     self.add_parents(name, mode=0o755)
 
     if kind == tarfile.DIRTYPE:
@@ -259,12 +258,7 @@ def main():
       help='Specify the numeric default owner of all files. E.g. 0.0')
   options = parser.parse_args()
 
-  # Parse modes arguments
-  default_mode = None
-  if options.mode:
-    # Convert from octal
-    default_mode = int(options.mode, 8)
-
+  default_mode = int(options.mode, 8) if options.mode else None
   uid = gid = 0
   if options.owner:
     ids = options.owner.split('.', 1)

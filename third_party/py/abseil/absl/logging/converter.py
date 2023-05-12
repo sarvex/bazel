@@ -43,6 +43,7 @@ representation, before manipulating the levels, and then only to cpp
 or absl if those level schemes are absolutely necessary.
 """
 
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -71,7 +72,7 @@ ABSL_LEVELS = {ABSL_FATAL: 'FATAL',
                ABSL_DEBUG: 'DEBUG'}
 
 # Inverts the ABSL_LEVELS dictionary
-ABSL_NAMES = dict((v, k) for (k, v) in ABSL_LEVELS.items())
+ABSL_NAMES = {v: k for (k, v) in ABSL_LEVELS.items()}
 
 ABSL_TO_STANDARD = {ABSL_FATAL: STANDARD_CRITICAL,
                     ABSL_ERROR: STANDARD_ERROR,
@@ -80,7 +81,7 @@ ABSL_TO_STANDARD = {ABSL_FATAL: STANDARD_CRITICAL,
                     ABSL_DEBUG: STANDARD_DEBUG}
 
 # Inverts the ABSL_TO_STANDARD
-STANDARD_TO_ABSL = dict((v, k) for (k, v) in ABSL_TO_STANDARD.items())
+STANDARD_TO_ABSL = {v: k for (k, v) in ABSL_TO_STANDARD.items()}
 
 
 def get_initial_for_level(level):
@@ -121,12 +122,8 @@ def absl_to_cpp(level):
     The corresponding integer level for use in Abseil C++.
   """
   if not isinstance(level, int):
-    raise TypeError('Expect an int level, found {}'.format(type(level)))
-  if level >= 0:
-    # C++ log levels must be >= 0
-    return 0
-  else:
-    return -level
+    raise TypeError(f'Expect an int level, found {type(level)}')
+  return 0 if level >= 0 else -level
 
 
 def absl_to_standard(level):
@@ -142,9 +139,8 @@ def absl_to_standard(level):
     The corresponding integer level for use in standard logging.
   """
   if not isinstance(level, int):
-    raise TypeError('Expect an int level, found {}'.format(type(level)))
-  if level < ABSL_FATAL:
-    level = ABSL_FATAL
+    raise TypeError(f'Expect an int level, found {type(level)}')
+  level = max(level, ABSL_FATAL)
   if level <= ABSL_DEBUG:
     return ABSL_TO_STANDARD[level]
   # Maps to vlog levels.
@@ -179,9 +175,8 @@ def standard_to_absl(level):
     The corresponding integer level for use in absl logging.
   """
   if not isinstance(level, int):
-    raise TypeError('Expect an int level, found {}'.format(type(level)))
-  if level < 0:
-    level = 0
+    raise TypeError(f'Expect an int level, found {type(level)}')
+  level = max(level, 0)
   if level < STANDARD_DEBUG:
     # Maps to vlog levels.
     return STANDARD_DEBUG - level + 1

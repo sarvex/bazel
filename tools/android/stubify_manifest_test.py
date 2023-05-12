@@ -117,8 +117,9 @@ class StubifyMobileInstallTest(unittest.TestCase):
   def assertHasPermission(self, manifest_string, permission):
     manifest = ElementTree.fromstring(manifest_string)
     nodes = manifest.findall(
-        'uses-permission[@android:name="%s"]' % permission,
-        namespaces={"android": ANDROID})
+        f'uses-permission[@android:name="{permission}"]',
+        namespaces={"android": ANDROID},
+    )
     self.assertEqual(1, len(nodes))
 
   def testAddsPermission(self):

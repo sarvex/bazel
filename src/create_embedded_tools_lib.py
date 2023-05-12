@@ -63,9 +63,6 @@ def copy_tar_to_zip(output_zip, input_file, process_filename=None):
         # marks a symbolic link in the Zip file format.
         zipinfo.external_attr = 0o120000 << 16
         output_zip.writestr(zipinfo, tar_entry.linkname)
-      else:
-        # Ignore directories, hard links, special files, ...
-        pass
 
 
 def copy_zip_to_zip(output_zip, input_file, process_filename=None):

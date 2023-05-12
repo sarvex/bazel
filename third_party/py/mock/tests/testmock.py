@@ -99,17 +99,18 @@ class MockTest(unittest2.TestCase):
     def test_repr(self):
         mock = Mock(name='foo')
         self.assertIn('foo', repr(mock))
-        self.assertIn("'%s'" % id(mock), repr(mock))
+        self.assertIn(f"'{id(mock)}'", repr(mock))
 
         mocks = [(Mock(), 'mock'), (Mock(name='bar'), 'bar')]
         for mock, name in mocks:
-            self.assertIn('%s.bar' % name, repr(mock.bar))
-            self.assertIn('%s.foo()' % name, repr(mock.foo()))
-            self.assertIn('%s.foo().bing' % name, repr(mock.foo().bing))
-            self.assertIn('%s()' % name, repr(mock()))
-            self.assertIn('%s()()' % name, repr(mock()()))
-            self.assertIn('%s()().foo.bar.baz().bing' % name,
-                          repr(mock()().foo.bar.baz().bing))
+            self.assertIn(f'{name}.bar', repr(mock.bar))
+            self.assertIn(f'{name}.foo()', repr(mock.foo()))
+            self.assertIn(f'{name}.foo().bing', repr(mock.foo().bing))
+            self.assertIn(f'{name}()', repr(mock()))
+            self.assertIn(f'{name}()()', repr(mock()()))
+            self.assertIn(
+                f'{name}()().foo.bar.baz().bing', repr(mock()().foo.bar.baz().bing)
+            )
 
 
     def test_repr_with_spec(self):
@@ -626,7 +627,7 @@ class MockTest(unittest2.TestCase):
     def test_dir(self):
         mock = Mock()
         attrs = set(dir(mock))
-        type_attrs = set([m for m in dir(Mock) if not m.startswith('_')])
+        type_attrs = {m for m in dir(Mock) if not m.startswith('_')}
 
         # all public attributes from the type are included
         self.assertEqual(set(), type_attrs - attrs)
@@ -756,11 +757,11 @@ class MockTest(unittest2.TestCase):
                 meth, 1, 2, 3
             )
 
+        actual = "foo(1, '2', 3, foo='foo')"
+        expected = "foo()"
+        message = 'Expected call: %s\nActual call: %s'
         # empty
         for meth in asserters:
-            actual = "foo(1, '2', 3, foo='foo')"
-            expected = "foo()"
-            message = 'Expected call: %s\nActual call: %s'
             self.assertRaisesWithMsg(
                 AssertionError, message % (expected, actual), meth
             )
@@ -805,7 +806,7 @@ class MockTest(unittest2.TestCase):
         self.assertEqual(mock().mock_calls,
                          call.foo.bar().baz().call_list())
 
-        for kwargs in dict(), dict(name='bar'):
+        for kwargs in ({}, dict(name='bar')):
             mock = MagicMock(**kwargs)
             int(mock.foo)
             expected = [('foo.__int__', (), {})]
@@ -1099,6 +1100,7 @@ class MockTest(unittest2.TestCase):
 
 
     def test_mock_add_spec(self):
+
         class _One(object):
             one = 1
         class _Two(object):
@@ -1110,17 +1112,20 @@ class MockTest(unittest2.TestCase):
             Mock, MagicMock, NonCallableMock, NonCallableMagicMock
         ]
         for Klass in list(klasses):
-            klasses.append(lambda K=Klass: K(spec=Anything))
-            klasses.append(lambda K=Klass: K(spec_set=Anything))
-
+            klasses.extend(
+                (
+                    lambda K=Klass: K(spec=Anything),
+                    lambda K=Klass: K(spec_set=Anything),
+                )
+            )
         for Klass in klasses:
-            for kwargs in dict(), dict(spec_set=True):
+            for kwargs in ({}, dict(spec_set=True)):
                 mock = Klass()
                 #no error
                 mock.one, mock.two, mock.three
 
                 for One, Two in [(_One, _Two), (['one'], ['two'])]:
-                    for kwargs in dict(), dict(spec_set=True):
+                    for kwargs in ({}, dict(spec_set=True)):
                         mock.mock_add_spec(One, **kwargs)
 
                         mock.one

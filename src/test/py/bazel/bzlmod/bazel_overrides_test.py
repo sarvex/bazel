@@ -40,15 +40,10 @@ class BazelOverridesTest(test_base.TestBase):
     self.ScratchFile(
         '.bazelrc',
         [
-            # In ipv6 only network, this has to be enabled.
-            # 'startup --host_jvm_args=-Djava.net.preferIPv6Addresses=true',
             'common --enable_bzlmod',
-            'common --registry=' + self.main_registry.getURL(),
-            # We need to have BCR here to make sure built-in modules like
-            # bazel_tools can work.
+            f'common --registry={self.main_registry.getURL()}',
             'common --registry=https://bcr.bazel.build',
             'common --verbose_failures',
-            # Set an explicit Java language version
             'common --java_language_version=8',
             'common --tool_java_language_version=8',
             'common --lockfile_mode=update',
@@ -135,7 +130,7 @@ class BazelOverridesTest(test_base.TestBase):
             'bazel_dep(name = "bbb", version = "1.0")',
             'single_version_override(',
             '  module_name = "aaa",',
-            '  registry = "%s",' % another_registry.getURL(),
+            f'  registry = "{another_registry.getURL()}",',
             ')',
         ],
     )
@@ -154,7 +149,7 @@ class BazelOverridesTest(test_base.TestBase):
             'bazel_dep(name = "bbb", version = "1.1")',
             'archive_override(',
             '  module_name = "aaa",',
-            '  urls = ["%s"],' % archive_aaa_1_0.as_uri(),
+            f'  urls = ["{archive_aaa_1_0.as_uri()}"],',
             '  patches = ["//:aaa.patch"],',
             '  patch_strip = 1,',
             ')',
@@ -197,8 +192,8 @@ class BazelOverridesTest(test_base.TestBase):
             'bazel_dep(name = "bbb", version = "1.1")',
             'git_override(',
             '  module_name = "aaa",',
-            '  remote = "%s",' % src_aaa_1_0.as_uri(),
-            '  commit = "%s",' % commit,
+            f'  remote = "{src_aaa_1_0.as_uri()}",',
+            f'  commit = "{commit}",',
             '  patches = ["//:aaa.patch"],',
             '  patch_strip = 1,',
             ')',
@@ -236,7 +231,7 @@ class BazelOverridesTest(test_base.TestBase):
             'bazel_dep(name = "ss", version = "1.0")',
             'local_path_override(',
             '  module_name = "ss",',
-            '  path = "%s",' % self.Path('aa'),
+            f"""  path = "{self.Path('aa')}",""",
             ')',
         ],
     )

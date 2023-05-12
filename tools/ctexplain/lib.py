@@ -33,8 +33,7 @@ def analyze_build(bazel: bazel_api.BazelApi, labels: Tuple[str, ...],
   Raises:
     RuntimeError: On any invocation errors.
   """
-  cquery_args = [f'deps({",".join(labels)})']
-  cquery_args.extend(build_flags)
+  cquery_args = [f'deps({",".join(labels)})', *build_flags]
   (success, stderr, cts) = bazel.cquery(cquery_args)
   if not success:
     raise RuntimeError("invocation failed: " + stderr.decode("utf-8"))
